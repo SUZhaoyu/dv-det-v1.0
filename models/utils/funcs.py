@@ -13,8 +13,7 @@ def roi_logits_to_attrs_tf(base_coors, input_logits, anchor_size):
     x = tf.clip_by_value(input_logits[:, 3] * anchor_diag + base_coors[:, 0], -1e7, 1e7)
     y = tf.clip_by_value(input_logits[:, 4] * anchor_diag + base_coors[:, 1], -1e7, 1e7)
     z = tf.clip_by_value(input_logits[:, 5] * anchor_size[2] + base_coors[:, 2], -1e7, 1e7)
-    r = tf.clip_by_value(input_logits[:, 6] * 3.1415927, -1e7, 1e7)
-    # r = input_logits[:, 6]
+    r = tf.clip_by_value(input_logits[:, 6] * np.pi, -1e7, 1e7)
     return tf.stack([w, l, h, x, y, z, r], axis=-1)
 
 
@@ -26,8 +25,7 @@ def bbox_logits_to_attrs_tf(input_roi_attrs, input_logits):
     x = tf.clip_by_value(input_logits[:, 3] * roi_diag + input_roi_attrs[:, 3], -1e7, 1e7)
     y = tf.clip_by_value(input_logits[:, 4] * roi_diag + input_roi_attrs[:, 4], -1e7, 1e7)
     z = tf.clip_by_value(input_logits[:, 5] * input_roi_attrs[:, 2] + input_roi_attrs[:, 5], -1e7, 1e7)
-    r = tf.clip_by_value(input_logits[:, 6] * 3.1415927 + input_roi_attrs[:, 6], -1e7, 1e7)
-    # r = input_logits[:, 6] + input_roi_attrs[:, 6]
+    r = tf.clip_by_value(input_logits[:, 6] * np.pi + input_roi_attrs[:, 6], -1e7, 1e7)
     return tf.stack([w, l, h, x, y, z, r], axis=-1)
 
 
@@ -150,6 +148,12 @@ def get_proposals_from_anchors(input_anchors, input_logits, clip=False):
 
 
 def get_anchor_masks(anchor_ious, low_thres=0.35, high_thres=0.6):
+    '''
+    tf.scatter_nd_update accepts indexes with one more dimensional padding, and the ref has to be
+    tf.Variables() under eager_execution mode:
+    https://stackoverflow.com/questions/54399670/attributeerror-object-has-no-attribute-lazy-read
+    '''
+
     batch_size = anchor_ious.shape[0]  # b
     num_anchors = anchor_ious.shape[1]  # n
     masks = tf.Variable(tf.zeros(shape=[batch_size * num_anchors])) # [b * n]
