@@ -107,9 +107,9 @@ def get_anchors(bev_img, resolution, offset, anchor_params):
     output_anchor = tf.reshape(output_anchor, shape=[length * num_anchor, 7])  # [w*l*2, 7]
     output_anchor = tf.expand_dims(output_anchor, axis=0)  # [1, w*l*2, 7]
     output_anchor = tf.tile(output_anchor, [batch_size, 1, 1])  # [n, w*l*2, 7]
-    # anchor_num_list = tf.ones([batch_size], dtype=tf.int32) * num_anchor * length
+    anchor_num_list = tf.ones([batch_size], dtype=tf.int32) * num_anchor * length
 
-    return output_anchor
+    return output_anchor, anchor_num_list
 
 
 def get_anchor_ious(anchors, labels):
@@ -149,14 +149,26 @@ def get_proposals_from_anchors(input_anchors, input_logits, clip=False):
     return tf.stack([w, l, h, x, y, z, r], axis=-1)
 
 
-def get_anchor_masks(anchor_ious, masks, low_thres, high_thres):
+def get_anchor_masks(anchor_ious, low_thres=0.35, high_thres=0.6):
     batch_size = anchor_ious.shape[0]  # b
     num_anchors = anchor_ious.shape[1]  # n
-    num_labels = anchor_ious.shape[2]  # k
+    masks = tf.zeros(shape=[batch_size * num_anchors])  # [b * n]
 
-    max_match_idx = tf.argmax(anchor_ious, axis=1)  # [b, k]
-    max_match_idx_offset = tf.expand_dims(tf.range(batch_size) * num_anchors, axis=-1)  # [b, 1]
-    max_match_idx = tf.reshape(max_match_idx + max_match_idx_offset, shape=[-1])  # [b*k]
-    masks = tf.scatter_nd_update(masks, max_match_idx, tf.ones_like(max_match_idx))
+    matched_anchor_ious = tf.reshape(tf.argmax(anchor_ious, axis=2), shape=[-1])  # [b*n]
+    positive_idx = tf.where(tf.greater_equal(matched_anchor_ious, high_thres))
+    masks = tf.scatter_nd_update(masks, positive_idx, tf.ones_like(positive_idx))
+    ignore_idx = tf.where(tf.logical_and(tf.less(matched_anchor_ious, high_thres), tf.greater(matched_anchor_ious, low_thres)))
+    masks = tf.scatter_nd_update(masks, ignore_idx, tf.ones_like(ignore_idx) * -1)
+
+    max_match_idx = tf.argmax(anchor_ious, axis=1)  # [b, k] in (0, n)
+    batch_idx_offset = tf.expand_dims(tf.range(batch_size) * num_anchors, axis=-1)  # [b, 1]
+    max_match_idx = tf.reshape(max_match_idx + batch_idx_offset, shape=[-1])  # [b*k]
+    masks = tf.scatter_nd_update(masks, max_match_idx, tf.ones_like(max_match_idx))  # in {-1, 0, 1}
+
+    return masks
+
+
+
+
 
 

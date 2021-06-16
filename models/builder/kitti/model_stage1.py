@@ -1,31 +1,32 @@
 import tensorflow as tf
-import configs.kitti.kitti_config_training as config
+import configs.kitti.kitti_config_training as CONFIG
 
 
 from models.utils.layers import point_conv_concat, conv_2d
-from models.utils.funcs import bev_compression, get_anchors, get_proposals_from_anchors, get_anchor_ious
+from models.utils.funcs import bev_compression, get_anchors, get_proposals_from_anchors, get_anchor_ious, \
+    get_anchor_masks
 
-ANCHOR_SIZE = config.anchor_size
+ANCHOR_SIZE = CONFIG.anchor_size
 EPS = tf.constant(1e-6)
 
-MODEL_PARAMS = {'xavier': config.xavier,
-                'stddev': config.stddev,
-                'activation': config.activation,
+MODEL_PARAMS = {'xavier': CONFIG.xavier,
+                'stddev': CONFIG.stddev,
+                'activation': CONFIG.activation,
                 'padding': -0.5}  # FIXME: need to change the paddings for initial convolution.
 
-DIMENSION_PARAMS = {'dimension': config.dimension,
-                    'offset': config.offset}
+DIMENSION_PARAMS = {'dimension': CONFIG.dimension,
+                    'offset': CONFIG.offset}
 
 
-BASE_MODEL_PARAMS = config.base_params
-BEV_RESOLUTION = config.bev_resolution
-BEV_MODEL_PARAMS = config.bev_params
-ANCHOR_PARAMS = config.anchor_params
+BASE_MODEL_PARAMS = CONFIG.base_params
+BEV_RESOLUTION = CONFIG.bev_resolution
+BEV_MODEL_PARAMS = CONFIG.bev_params
+ANCHOR_PARAMS = CONFIG.anchor_params
 
 
 
 def inputs_placeholder(input_channels=1,
-                       bbox_padding_num=config.aug_config['nbbox'],
+                       bbox_padding_num=CONFIG.aug_config['nbbox'],
                        batch_size=None):
     input_coors_p = tf.placeholder(tf.float32, shape=[None, 3], name='stage1_input_coors_p')
     input_features_p = tf.placeholder(tf.float32, shape=[None, input_channels], name='stage1_input_features_p')
@@ -57,8 +58,8 @@ def model(input_coors,
                                       center_idx=center_idx,
                                       layer_params=BASE_MODEL_PARAMS[layer_name],
                                       dimension_params=DIMENSION_PARAMS,
-                                      grid_buffer_size=config.grid_buffer_size,
-                                      output_pooling_size=config.output_pooling_size,
+                                      grid_buffer_size=CONFIG.grid_buffer_size,
+                                      output_pooling_size=CONFIG.output_pooling_size,
                                       scope="stage1_" + layer_name,
                                       is_training=is_training,
                                       trainable=trainable,
@@ -85,17 +86,21 @@ def model(input_coors,
                                   second_last_layer=(i == len(BEV_MODEL_PARAMS) - 2),
                                   last_layer=(i == len(BEV_MODEL_PARAMS) - 1))
 
-            proposal_logits = tf.reshape(bev_img, shape=[-1, config.output_attr])
-            anchors = get_anchors(bev_img=bev_img,
-                                  resolution=BEV_RESOLUTION,
-                                  offset=DIMENSION_PARAMS['offset'],
-                                  anchor_params=ANCHOR_PARAMS)
+            proposal_logits = tf.reshape(bev_img, shape=[-1, CONFIG.output_attr])
+            anchors, num_list = get_anchors(bev_img=bev_img,
+                                            resolution=BEV_RESOLUTION,
+                                            offset=DIMENSION_PARAMS['offset'],
+                                            anchor_params=ANCHOR_PARAMS)
             proposals = get_proposals_from_anchors(input_anchors=anchors,
                                                    input_logits=proposal_logits)
 
-    return anchors, proposals
+    return anchors, proposals, num_list
 
 
-def loss(anchors, proposals, labels):
+def loss(anchors, proposals, num_list, labels):
     anchor_ious = get_anchor_ious(anchors, labels[..., :7])
-    max_match_anchor_ious = tf.argmax(anchor_ious, axis=0)
+    anchor_masks = get_anchor_masks(anchor_ious=anchor_ious,
+                                    low_thres=CONFIG.negative_thres,
+                                    high_thres=CONFIG.positive_thres)
+
+

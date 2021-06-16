@@ -4,6 +4,13 @@
     <list>
       <list>
         <remote-mappings server-id="python@e8bf33d4-2c3b-4639-9926-53db8feace44" />
+        <remote-mappings server-id="python@sftp://tan@192.168.1.54:22/home/tan/anaconda3/envs/detection/bin/python">
+          <settings>
+            <list>
+              <mapping local-root="$PROJECT_DIR$" remote-root="/home/tan/tony/dv-det-v1.0" />
+            </list>
+          </settings>
+        </remote-mappings>
       </list>
     </list>
   </component>
