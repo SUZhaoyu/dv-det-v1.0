@@ -4,7 +4,6 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0"
 from os.path import join
 import numpy as np
 import tensorflow as tf
-tf.compat.v1.enable_eager_execution()
 from tensorflow.python.client import timeline
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -14,7 +13,7 @@ from data.generator.kitti_generator import Dataset
 import configs.kitti.kitti_config_training as config
 tf.enable_eager_execution()
 from models.tf_ops.loader import grid_sampling, dense_voxelization
-from models.utils.funcs import get_anchors, get_anchor_ious, bev_compression
+from models.utils.funcs import get_anchors, get_anchor_ious, bev_compression, get_anchor_masks
 
 from models.tf_ops.test.test_utils import fetch_instance, plot_points
 
@@ -53,31 +52,25 @@ if __name__ == '__main__':
                               resolution=[0.6, 0.6, 0.8],
                               dimension_params=DIMENSION_PARAMS)
 
-    anchors = get_anchors(bev_img=bev_img,
-                          resolution=[0.6, 0.6, 0.8],
-                          offset=DIMENSION_PARAMS['offset'],
-                          anchor_params=anchor_param_list)
+    anchors, anchor_num_list = get_anchors(bev_img=bev_img,
+                                           resolution=[0.6, 0.6, 0.8],
+                                           offset=DIMENSION_PARAMS['offset'],
+                                           anchor_params=anchor_param_list)
 
     anchor_ious = get_anchor_ious(anchors, input_labels[..., :7])
+    anchor_masks =  get_anchor_masks(anchor_ious, 0.35, 0.6)
 
-    anchors = anchors.numpy()[id]
-    anchor_ious = anchor_ious.numpy()[id] # [n, 256]
-    input_labels = input_labels[id]
-    input_points = fetch_instance(input_coors, input_num_list, id)
+    anchor_num_list = anchor_num_list.numpy()
+    anchor_masks = anchor_masks.numpy()
+    anchors = anchors.numpy()
 
+    anchor_masks = fetch_instance(anchor_masks, anchor_num_list, id)
+    input_coors = fetch_instance(input_coors, input_num_list, id)
+    anchors = anchors[id]
 
-    # anchor_ious = np.max(anchor_ious, axis=1) # [n]
+    output_anchors = anchors[anchor_masks == 1, :]
 
-    max_match_anchor_ious = np.argmax(anchor_ious, axis=0)  # [256]
-    max_match_anchors = anchors[max_match_anchor_ious]
-
-    positive_anchors = anchors[np.max(anchor_ious, axis=1) > 0.6]
-
-    output_anchors = np.concatenate([max_match_anchors, positive_anchors], axis=0)
-
-    # positive_anchors = anchors[np.max(anchor_ious, axis=1) > 0.6]
-
-    plot_points(coors=input_points,
+    plot_points(coors=input_coors,
                 bboxes=output_anchors,
                 name='anchor_ious')
 

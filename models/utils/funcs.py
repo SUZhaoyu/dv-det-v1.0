@@ -152,18 +152,18 @@ def get_proposals_from_anchors(input_anchors, input_logits, clip=False):
 def get_anchor_masks(anchor_ious, low_thres=0.35, high_thres=0.6):
     batch_size = anchor_ious.shape[0]  # b
     num_anchors = anchor_ious.shape[1]  # n
-    masks = tf.zeros(shape=[batch_size * num_anchors])  # [b * n]
+    masks = tf.Variable(tf.zeros(shape=[batch_size * num_anchors])) # [b * n]
 
-    matched_anchor_ious = tf.reshape(tf.argmax(anchor_ious, axis=2), shape=[-1])  # [b*n]
+    matched_anchor_ious = tf.reshape(tf.reduce_max(anchor_ious, axis=2), shape=[-1])  # [b*n]
     positive_idx = tf.where(tf.greater_equal(matched_anchor_ious, high_thres))
-    masks = tf.scatter_nd_update(masks, positive_idx, tf.ones_like(positive_idx))
+    masks = tf.scatter_nd_update(masks, positive_idx, tf.ones(positive_idx.shape[0]))
     ignore_idx = tf.where(tf.logical_and(tf.less(matched_anchor_ious, high_thres), tf.greater(matched_anchor_ious, low_thres)))
-    masks = tf.scatter_nd_update(masks, ignore_idx, tf.ones_like(ignore_idx) * -1)
+    masks = tf.scatter_nd_update(masks, ignore_idx, tf.ones(ignore_idx.shape[0]) * -1)
 
     max_match_idx = tf.argmax(anchor_ious, axis=1)  # [b, k] in (0, n)
-    batch_idx_offset = tf.expand_dims(tf.range(batch_size) * num_anchors, axis=-1)  # [b, 1]
-    max_match_idx = tf.reshape(max_match_idx + batch_idx_offset, shape=[-1])  # [b*k]
-    masks = tf.scatter_nd_update(masks, max_match_idx, tf.ones_like(max_match_idx))  # in {-1, 0, 1}
+    batch_idx_offset = tf.expand_dims(tf.range(batch_size, dtype=tf.int64) * num_anchors, axis=-1)  # [b, 1]
+    max_match_idx = tf.expand_dims(tf.reshape(max_match_idx + batch_idx_offset, shape=[-1]), axis=1) # [b*k, 1]
+    masks = tf.scatter_nd_update(masks, max_match_idx, tf.ones(max_match_idx.shape[0]))  # in {-1, 0, 1}
 
     return masks
 

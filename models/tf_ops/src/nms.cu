@@ -237,8 +237,8 @@ __device__ inline float iou3d(const float *box_a, const float *box_b, const floa
 
         return vol_overlap / fmaxf(vol_a + vol_b - vol_overlap, EPS);
     } else {
-        if (s_overlap > 0)
-            printf("%f, %f, %f\n", s_overlap, sa, sb);
+//        if (s_overlap > 0)
+//            printf("%f, %f, %f\n", s_overlap, sa, sb);
         return s_overlap / fmaxf(sa + sb - s_overlap, EPS);
     }
 }
