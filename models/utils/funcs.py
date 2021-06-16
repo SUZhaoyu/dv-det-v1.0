@@ -117,12 +117,12 @@ def get_anchor_ious(anchors, labels):
     Calculate the IoUs between anchors and labels for the positive anchor selection.
     :param anchors: 3-D Tensor with shape [batch, w*l*2, 7]
     :param labels: 3-D Tensor with shape [batch, 256, 7]
-    :return: A 2-D IoU matrix with shape [batch*w*l*2, 256]
+    :return: A 2-D IoU matrix with shape [batch, w*l*2, 256]
     '''
     anchor_ious = get_iou_matrix(input_bbox=anchors,
                                  target_bbox=labels,
                                  ignore_height=True)
-    anchor_ious = tf.reshape(anchor_ious, shape=[-1, anchor_ious.shape[-1]])
+    # anchor_ious = tf.reshape(anchor_ious, shape=[-1, anchor_ious.shape[-1]])
     return anchor_ious
 
 
@@ -147,3 +147,16 @@ def get_proposals_from_anchors(input_anchors, input_logits, clip=False):
         r = input_logits[:, 6] * np.pi + input_anchors[:, 6]
 
     return tf.stack([w, l, h, x, y, z, r], axis=-1)
+
+
+def get_anchor_masks(anchor_ious, masks, low_thres, high_thres):
+    batch_size = anchor_ious.shape[0]  # b
+    num_anchors = anchor_ious.shape[1]  # n
+    num_labels = anchor_ious.shape[2]  # k
+
+    max_match_idx = tf.argmax(anchor_ious, axis=1)  # [b, k]
+    max_match_idx_offset = tf.expand_dims(tf.range(batch_size) * num_anchors, axis=-1)  # [b, 1]
+    max_match_idx = tf.reshape(max_match_idx + max_match_idx_offset, shape=[-1])  # [b*k]
+    masks = tf.scatter_nd_update(masks, max_match_idx, tf.ones_like(max_match_idx))
+
+
