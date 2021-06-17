@@ -1,10 +1,10 @@
 import tensorflow as tf
 import configs.kitti.kitti_config_training as CONFIG
 
-
+from models.tf_ops.loader import get_gt_bbox
 from models.utils.layers import point_conv_concat, conv_2d
 from models.utils.funcs import bev_compression, get_anchors, get_proposals_from_anchors, get_anchor_ious, \
-    get_anchor_masks
+    get_iou_masks, merge_batch_anchors
 
 ANCHOR_SIZE = CONFIG.anchor_size
 EPS = tf.constant(1e-6)
@@ -87,20 +87,34 @@ def model(input_coors,
                                   last_layer=(i == len(BEV_MODEL_PARAMS) - 1))
 
             proposal_logits = tf.reshape(bev_img, shape=[-1, CONFIG.output_attr])
-            anchors, num_list = get_anchors(bev_img=bev_img,
-                                            resolution=BEV_RESOLUTION,
-                                            offset=DIMENSION_PARAMS['offset'],
-                                            anchor_params=ANCHOR_PARAMS)
+            anchors = get_anchors(bev_img=bev_img,
+                                  resolution=BEV_RESOLUTION,
+                                  offset=DIMENSION_PARAMS['offset'],
+                                  anchor_params=ANCHOR_PARAMS)
             proposals = get_proposals_from_anchors(input_anchors=anchors,
                                                    input_logits=proposal_logits)
 
-    return anchors, proposals, num_list
+    return anchors, proposals
 
 
-def loss(anchors, proposals, num_list, labels):
+def loss(anchors, proposals, labels):
     anchor_ious = get_anchor_ious(anchors, labels[..., :7])
-    anchor_masks = get_anchor_masks(anchor_ious=anchor_ious,
-                                    low_thres=CONFIG.negative_thres,
-                                    high_thres=CONFIG.positive_thres)
+    anchor_masks = get_iou_masks(anchor_ious=anchor_ious,
+                                 low_thres=CONFIG.negative_thres,
+                                 high_thres=CONFIG.positive_thres)
+
+    anchors, num_list = merge_batch_anchors(anchors)
+    gt_bbox, gt_conf = get_gt_bbox(input_coors=anchors[:, 3:6],
+                                   input_num_list=num_list,
+                                   bboxes=labels,
+                                   padding_offset=CONFIG.padding_offset,
+                                   diff_thres=CONFIG.diff_thres,
+                                   cls_thres=CONFIG.cls_thres,
+                                   ignore_height=True)
+
+
+
+
+
 
 

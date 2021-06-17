@@ -1,11 +1,11 @@
 import tensorflow as tf
 import numpy as np
 
-from models.tf_ops.loader import roi_logits_to_attrs, bbox_logits_to_attrs, dense_voxelization
+from models.tf_ops.loader import dense_voxelization
 from models.tf_ops.loader import get_iou_matrix
 
 
-def roi_logits_to_attrs_tf(base_coors, input_logits, anchor_size):
+def roi_logits_to_attrs(base_coors, input_logits, anchor_size):
     anchor_diag = tf.sqrt(tf.pow(anchor_size[0], 2.) + tf.pow(anchor_size[1], 2.))
     w = tf.clip_by_value(tf.exp(input_logits[:, 0]) * anchor_size[0], 0., 1e7)
     l = tf.clip_by_value(tf.exp(input_logits[:, 1]) * anchor_size[1], 0., 1e7)
@@ -17,7 +17,7 @@ def roi_logits_to_attrs_tf(base_coors, input_logits, anchor_size):
     return tf.stack([w, l, h, x, y, z, r], axis=-1)
 
 
-def bbox_logits_to_attrs_tf(input_roi_attrs, input_logits):
+def bbox_logits_to_attrs(input_roi_attrs, input_logits):
     roi_diag = tf.sqrt(tf.pow(input_roi_attrs[:, 0], 2.) + tf.pow(input_roi_attrs[:, 1], 2.))
     w = tf.clip_by_value(tf.exp(input_logits[:, 0]) * input_roi_attrs[:, 0], 0., 1e7)
     l = tf.clip_by_value(tf.exp(input_logits[:, 1]) * input_roi_attrs[:, 1], 0., 1e7)
@@ -27,21 +27,6 @@ def bbox_logits_to_attrs_tf(input_roi_attrs, input_logits):
     z = tf.clip_by_value(input_logits[:, 5] * input_roi_attrs[:, 2] + input_roi_attrs[:, 5], -1e7, 1e7)
     r = tf.clip_by_value(input_logits[:, 6] * np.pi + input_roi_attrs[:, 6], -1e7, 1e7)
     return tf.stack([w, l, h, x, y, z, r], axis=-1)
-
-
-def get_roi_attrs(input_logits, base_coors, anchor_size, is_eval=False):
-    method = roi_logits_to_attrs if is_eval else roi_logits_to_attrs_tf
-    roi_attrs = method(input_logits=input_logits,
-                       base_coors=base_coors,
-                       anchor_size=anchor_size)
-    return roi_attrs
-
-
-def get_bbox_attrs(input_logits, input_roi_attrs, is_eval=False):
-    method = bbox_logits_to_attrs if is_eval else bbox_logits_to_attrs_tf
-    bbox_attrs = method(input_logits=input_logits,
-                        input_roi_attrs=input_roi_attrs)
-    return bbox_attrs
 
 
 def bev_compression(input_coors,
@@ -105,9 +90,18 @@ def get_anchors(bev_img, resolution, offset, anchor_params):
     output_anchor = tf.reshape(output_anchor, shape=[length * num_anchor, 7])  # [w*l*2, 7]
     output_anchor = tf.expand_dims(output_anchor, axis=0)  # [1, w*l*2, 7]
     output_anchor = tf.tile(output_anchor, [batch_size, 1, 1])  # [n, w*l*2, 7]
-    anchor_num_list = tf.ones([batch_size], dtype=tf.int32) * num_anchor * length
 
-    return output_anchor, anchor_num_list
+    return output_anchor
+
+def merge_batch_anchors(batch_anchors):
+    batch_size = tf.shape(batch_anchors)[0]
+    anchor_num_per_batch = tf.shape(batch_anchors)[1]
+    anchor_attr = tf.shape(batch_anchors)[2]
+
+    anchors = tf.reshape(batch_anchors, shape=[batch_size*anchor_num_per_batch, anchor_attr])
+    num_list = tf.ones([batch_size], dtype=tf.int32) * anchor_num_per_batch
+
+    return anchors, num_list
 
 
 def get_anchor_ious(anchors, labels):
@@ -115,7 +109,7 @@ def get_anchor_ious(anchors, labels):
     Calculate the IoUs between anchors and labels for the positive anchor selection.
     :param anchors: 3-D Tensor with shape [batch, w*l*2, 7]
     :param labels: 3-D Tensor with shape [batch, 256, 7]
-    :return: A 2-D IoU matrix with shape [batch, w*l*2, 256]
+    :return: A 3-D IoU matrix with shape [batch, w*l*2, 256]
     '''
     anchor_ious = get_iou_matrix(input_bbox=anchors,
                                  target_bbox=labels,
@@ -147,7 +141,7 @@ def get_proposals_from_anchors(input_anchors, input_logits, clip=False):
     return tf.stack([w, l, h, x, y, z, r], axis=-1)
 
 
-def get_anchor_masks(anchor_ious, low_thres=0.35, high_thres=0.6):
+def get_iou_masks(anchor_ious, low_thres=0.35, high_thres=0.6):
     '''
     tf.scatter_nd_update accepts indexes with one more dimensional padding, and the ref has to be
     tf.Variables() under eager_execution mode:
@@ -169,7 +163,21 @@ def get_anchor_masks(anchor_ious, low_thres=0.35, high_thres=0.6):
     max_match_idx = tf.expand_dims(tf.reshape(max_match_idx + batch_idx_offset, shape=[-1]), axis=1) # [b*k, 1]
     masks = tf.scatter_nd_update(masks, max_match_idx, tf.ones(max_match_idx.shape[0]))  # in {-1, 0, 1}
 
+    min_iou_idx = tf.where(tf.logical_and(tf.less(matched_anchor_ious, 0.1), tf.equal(masks, 1)))
+    masks = tf.scatter_nd_update(masks, min_iou_idx, tf.zeros(min_iou_idx.shape[0]))
+
     return masks
+
+def correct_ignored_masks(iou_masks, gt_conf):
+    ignored_positive_idx = tf.where(tf.logical_and(tf.equal(iou_masks, 1), tf.equal(gt_conf, -1)))
+    masks_weight = tf.Variable(tf.ones_like(iou_masks))
+    masks_weight = tf.scatter_nd_update(masks_weight, ignored_positive_idx, tf.ones(ignored_positive_idx.shape[0])*-1)
+    return iou_masks * masks_weight
+
+
+
+
+
 
 
 
