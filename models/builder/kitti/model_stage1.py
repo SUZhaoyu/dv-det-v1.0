@@ -3,8 +3,10 @@ import configs.kitti.kitti_config_training as CONFIG
 
 from models.tf_ops.loader import get_gt_bbox
 from models.utils.layers import point_conv_concat, conv_2d
+from models.utils.iou import cal_3d_iou
+from models.utils.loss import get_masked_average, focal_loss, smooth_l1_loss
 from models.utils.funcs import bev_compression, get_anchors, get_proposals_from_anchors, get_anchor_ious, \
-    get_iou_masks, merge_batch_anchors
+    get_iou_masks, merge_batch_anchors, correct_ignored_masks
 
 ANCHOR_SIZE = CONFIG.anchor_size
 EPS = tf.constant(1e-6)
@@ -85,23 +87,23 @@ def model(input_coors,
                                   trainable=trainable,
                                   second_last_layer=(i == len(BEV_MODEL_PARAMS) - 2),
                                   last_layer=(i == len(BEV_MODEL_PARAMS) - 1))
-
             proposal_logits = tf.reshape(bev_img, shape=[-1, CONFIG.output_attr])
             anchors = get_anchors(bev_img=bev_img,
                                   resolution=BEV_RESOLUTION,
                                   offset=DIMENSION_PARAMS['offset'],
                                   anchor_params=ANCHOR_PARAMS)
-            proposals = get_proposals_from_anchors(input_anchors=anchors,
-                                                   input_logits=proposal_logits)
+            proposals, pred_conf = get_proposals_from_anchors(input_anchors=anchors,
+                                                              input_logits=proposal_logits)
 
-    return anchors, proposals
+    return anchors, proposals, pred_conf
 
 
-def loss(anchors, proposals, labels):
+def loss(anchors, proposals, pred_conf, labels, weight_decay):
     anchor_ious = get_anchor_ious(anchors, labels[..., :7])
-    anchor_masks = get_iou_masks(anchor_ious=anchor_ious,
-                                 low_thres=CONFIG.negative_thres,
-                                 high_thres=CONFIG.positive_thres)
+    anchor_iou_masks = get_iou_masks(anchor_ious=anchor_ious,
+                                     low_thres=CONFIG.negative_thres,
+                                     high_thres=CONFIG.positive_thres,
+                                     force_ignore_thres=CONFIG.forge_ignore_thres)
 
     anchors, num_list = merge_batch_anchors(anchors)
     gt_bbox, gt_conf = get_gt_bbox(input_coors=anchors[:, 3:6],
@@ -111,6 +113,43 @@ def loss(anchors, proposals, labels):
                                    diff_thres=CONFIG.diff_thres,
                                    cls_thres=CONFIG.cls_thres,
                                    ignore_height=True)
+
+    anchor_masks = correct_ignored_masks(iou_masks=anchor_iou_masks,
+                                         gt_conf=gt_conf)
+    ious = cal_3d_iou(gt_attrs=gt_bbox,
+                      pred_attrs=proposals,
+                      clip=False)
+    iou_loss = get_masked_average(1. - ious, anchor_masks)
+    averaged_iou = get_masked_average(ious, anchor_masks)
+    tf.summary.scalar('stage1_iou_loss', iou_loss)
+
+    angle_l1_loss = smooth_l1_loss(labels=gt_bbox[:, 6],
+                                   predictions=proposals[:, 6],
+                                   with_sin=True)
+    tf.summary.scalar('stage1_angle_l1_loss', angle_l1_loss)
+    tf.summary.scalar('stage1_angle_sin_bias', get_masked_average(tf.abs(tf.sin(gt_bbox[:, 6] - proposals[:, 6])), anchor_masks))
+    tf.summary.scalar('stage1_angle_bias', get_masked_average(tf.abs(gt_bbox[:, 6] - proposals[:, 6]), anchor_masks))
+
+    conf_masks = tf.cast(tf.greater(anchor_masks, -1), dtype=tf.float32)  # [-1, 0, 1] -> [0, 1, 1]
+    conf_target = tf.cast(gt_conf, dtype=tf.float32) * conf_masks  # [-1, 0, 1] * [0, 1, 1] -> [0, 0, 1]
+    conf_loss = get_masked_average(focal_loss(label=conf_target, pred=pred_conf, alpha=0.25), conf_masks)
+    tf.summary.scalar('stage1_conf_loss', conf_loss)
+
+    regular_l2_loss = weight_decay * tf.add_n(tf.get_collection("stage1_l2_loss"))
+    tf.summary.scalar('stage1_regularization_l2_loss', regular_l2_loss)
+
+    total_loss = iou_loss + angle_l1_loss + conf_loss + regular_l2_loss
+
+    return total_loss, averaged_iou
+
+
+
+
+
+
+
+
+
 
 
 

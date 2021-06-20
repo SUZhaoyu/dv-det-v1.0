@@ -181,6 +181,6 @@ def loss(anchor_coors,
 
     # total_loss = roi_iou_loss + roi_l1_loss + roi_conf_loss + roi_l2_loss
     total_loss = roi_iou_loss + anchor_cls_loss + roi_l1_loss + roi_conf_loss + roi_l2_loss
-    total_loss_collection = hvd.allreduce(total_loss)
+
 
     return total_loss_collection, roi_ious, averaged_iou

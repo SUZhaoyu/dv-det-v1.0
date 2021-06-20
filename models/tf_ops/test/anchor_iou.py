@@ -22,14 +22,14 @@ from models.tf_ops.test.test_utils import fetch_instance, plot_points
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 batch_size = 6
-id = 3
+id = 5
 dimension = [100., 140., 9.]
 offset = [10., 70., 5.]
 anchor_size = [1.6, 3.9, 1.5]
 bev_resolution = [0.4, 0.4, 0.8]
 
-DIMENSION_PARAMS = {'dimension': config.dimension_training,
-                    'offset': config.offset_training}
+DIMENSION_PARAMS = {'dimension': config.dimension,
+                    'offset': config.offset}
 
 anchor_param_list = [[1.6, 3.9, 1.5, -1.0, 0.],
                      [1.6, 3.9, 1.5, -1.0, np.pi/2]]
@@ -68,7 +68,7 @@ if __name__ == '__main__':
                                    input_num_list=anchor_num_list,
                                    bboxes=input_labels,
                                    padding_offset=0.2,
-                                   diff_thres=1,
+                                   diff_thres=3,
                                    cls_thres=0,
                                    ignore_height=True)
 
@@ -80,16 +80,16 @@ if __name__ == '__main__':
     gt_conf = gt_conf.numpy()
     anchors = anchors.numpy()
 
-    anchor_masks = fetch_instance(anchor_masks, anchor_num_list, id)
     input_coors = fetch_instance(input_coors, input_num_list, id)
+    anchor_masks = fetch_instance(anchor_masks, anchor_num_list, id)
     anchors = fetch_instance(anchors, anchor_num_list, id)
     gt_conf = fetch_instance(gt_conf, anchor_num_list, id)
 
-    output_anchors = anchors[gt_conf == 1, :]
+    output_anchors = anchors[anchor_masks == 1, :]
 
     plot_points(coors=input_coors,
                 bboxes=output_anchors,
-                name='anchor_ious')
+                name='anchor_ious_test')
 
 
 

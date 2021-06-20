@@ -137,11 +137,12 @@ def get_proposals_from_anchors(input_anchors, input_logits, clip=False):
         y = input_logits[:, 4] * anchor_diag + input_anchors[:, 4]
         z = input_logits[:, 5] * input_anchors[:, 2] + input_anchors[:, 5]
         r = input_logits[:, 6] * np.pi + input_anchors[:, 6]
+    proposal_attrs = tf.stack([w, l, h, x, y, z, r], axis=-1)
+    proposal_conf = tf.nn.sigmoid(input_logits[:, 7])
+    return proposal_attrs, proposal_conf
 
-    return tf.stack([w, l, h, x, y, z, r], axis=-1)
 
-
-def get_iou_masks(anchor_ious, low_thres=0.35, high_thres=0.6):
+def get_iou_masks(anchor_ious, low_thres=0.35, high_thres=0.6, force_ignore_thres=0.1):
     '''
     tf.scatter_nd_update accepts indexes with one more dimensional padding, and the ref has to be
     tf.Variables() under eager_execution mode:
@@ -154,24 +155,25 @@ def get_iou_masks(anchor_ious, low_thres=0.35, high_thres=0.6):
 
     matched_anchor_ious = tf.reshape(tf.reduce_max(anchor_ious, axis=2), shape=[-1])  # [b*n]
     positive_idx = tf.where(tf.greater_equal(matched_anchor_ious, high_thres))
-    masks = tf.scatter_nd_update(masks, positive_idx, tf.ones(positive_idx.shape[0]))
+    # masks = tf.scatter_nd_update(masks, positive_idx, tf.ones(positive_idx.shape[0]))
+    masks = tf.scatter_nd_update(masks, positive_idx, tf.ones(tf.shape(positive_idx)[0]))
     ignore_idx = tf.where(tf.logical_and(tf.less(matched_anchor_ious, high_thres), tf.greater(matched_anchor_ious, low_thres)))
-    masks = tf.scatter_nd_update(masks, ignore_idx, tf.ones(ignore_idx.shape[0]) * -1)
+    masks = tf.scatter_nd_update(masks, ignore_idx, tf.ones(tf.shape(ignore_idx)[0]) * -1)
 
     max_match_idx = tf.argmax(anchor_ious, axis=1)  # [b, k] in (0, n)
     batch_idx_offset = tf.expand_dims(tf.range(batch_size, dtype=tf.int64) * num_anchors, axis=-1)  # [b, 1]
     max_match_idx = tf.expand_dims(tf.reshape(max_match_idx + batch_idx_offset, shape=[-1]), axis=1) # [b*k, 1]
-    masks = tf.scatter_nd_update(masks, max_match_idx, tf.ones(max_match_idx.shape[0]))  # in {-1, 0, 1}
+    masks = tf.scatter_nd_update(masks, max_match_idx, tf.ones(tf.shape(max_match_idx)[0]))  # in {-1, 0, 1}
 
-    min_iou_idx = tf.where(tf.logical_and(tf.less(matched_anchor_ious, 0.1), tf.equal(masks, 1)))
-    masks = tf.scatter_nd_update(masks, min_iou_idx, tf.zeros(min_iou_idx.shape[0]))
+    min_iou_idx = tf.where(tf.logical_and(tf.less(matched_anchor_ious, force_ignore_thres), tf.equal(masks, 1)))
+    masks = tf.scatter_nd_update(masks, min_iou_idx, tf.zeros(tf.shape(min_iou_idx)[0]))
 
     return masks
 
 def correct_ignored_masks(iou_masks, gt_conf):
     ignored_positive_idx = tf.where(tf.logical_and(tf.equal(iou_masks, 1), tf.equal(gt_conf, -1)))
     masks_weight = tf.Variable(tf.ones_like(iou_masks))
-    masks_weight = tf.scatter_nd_update(masks_weight, ignored_positive_idx, tf.ones(ignored_positive_idx.shape[0])*-1)
+    masks_weight = tf.scatter_nd_update(masks_weight, ignored_positive_idx, tf.ones(tf.shape(ignored_positive_idx)[0])*-1)
     return iou_masks * masks_weight
 
 
