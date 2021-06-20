@@ -188,7 +188,7 @@ public:
 
         const Tensor& output_idx = context->input(1);
         auto output_idx_ptr = output_idx.template flat<int>().data();
-        OP_REQUIRES(context, output_idx.dims()==5,
+        OP_REQUIRES(context, output_idx.dims()==4,
                     errors::InvalidArgument("DenseVoxelizationGradOp expects output_idx in shape: [batch_size, output_w, output_l, output_h]."));
 
         const Tensor& output_features_grad = context->input(2);

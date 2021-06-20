@@ -11,7 +11,7 @@ from copy import deepcopy
 
 from data.generator.kitti_generator import Dataset
 import configs.kitti.kitti_config_training as config
-from models.builder.kitti.model_stage1 import inputs_placeholder
+tf.enable_eager_execution()
 from models.tf_ops.loader import grid_sampling, get_gt_bbox
 from models.utils.funcs import get_anchors, get_anchor_ious, bev_compression, get_iou_masks, merge_batch_anchors, \
     correct_ignored_masks
@@ -44,14 +44,9 @@ if __name__ == '__main__':
     input_coors, input_features, input_num_list, input_labels = next(Dataset.train_generator())
     Dataset.stop()
 
-    input_coors_p, input_features_p, input_num_list_p, input_bbox_p = \
-        inputs_placeholder(input_channels=1,
-                           bbox_padding_num=config.bbox_padding,
-                           batch_size=None)
-
-    coors = tf.cast(input_coors_p, dtype=tf.float32)
-    coors, num_list, idx = grid_sampling(coors, input_num_list_p, 0.5, offset=offset, dimension=dimension)
-    features = tf.gather(input_features_p, idx)
+    coors = tf.cast(input_coors, dtype=tf.float32)
+    coors, num_list, idx = grid_sampling(coors, input_num_list, 0.5, offset=offset, dimension=dimension)
+    features = tf.gather(input_features, idx)
 
     bev_img = bev_compression(input_coors=coors,
                               input_features=features,
@@ -64,33 +59,26 @@ if __name__ == '__main__':
                           offset=DIMENSION_PARAMS['offset'],
                           anchor_params=anchor_param_list)
 
-    anchor_ious = get_anchor_ious(anchors, input_bbox_p[..., :7])
+    anchor_ious = get_anchor_ious(anchors, input_labels[..., :7])
     anchor_iou_masks =  get_iou_masks(anchor_ious, 0.35, 0.6)
 
     anchors, anchor_num_list = merge_batch_anchors(anchors)
 
     gt_bbox, gt_conf = get_gt_bbox(input_coors=anchors[:, 3:6],
                                    input_num_list=anchor_num_list,
-                                   bboxes=input_bbox_p,
+                                   bboxes=input_labels,
                                    padding_offset=0.2,
                                    diff_thres=3,
                                    cls_thres=0,
                                    ignore_height=True)
 
     anchor_masks = correct_ignored_masks(anchor_iou_masks, gt_conf)
-    with tf.Session() as sess:
-        # sess.run(tf.global_variables_initializer(), feed_dict={input_num_list_p: input_num_list})
-        anchors, anchor_masks, anchor_num_list, gt_conf = sess.run([anchors, anchor_masks, anchor_num_list, gt_conf],
-                                                                   feed_dict={input_coors_p: input_coors,
-                                                                              input_features_p: input_features,
-                                                                              input_num_list_p: input_num_list,
-                                                                              input_bbox_p: input_labels})
 
 
-    # anchor_num_list = anchor_num_list.numpy()
-    # anchor_masks = anchor_masks.numpy()
-    # gt_conf = gt_conf.numpy()
-    # anchors = anchors.numpy()
+    anchor_num_list = anchor_num_list.numpy()
+    anchor_masks = anchor_masks.numpy()
+    gt_conf = gt_conf.numpy()
+    anchors = anchors.numpy()
 
     input_coors = fetch_instance(input_coors, input_num_list, id)
     anchor_masks = fetch_instance(anchor_masks, anchor_num_list, id)
@@ -101,7 +89,7 @@ if __name__ == '__main__':
 
     plot_points(coors=input_coors,
                 bboxes=output_anchors,
-                name='anchor_ious_tf')
+                name='anchor_ious_test')
 
 
 

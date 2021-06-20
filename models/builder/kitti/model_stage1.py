@@ -126,6 +126,7 @@ def loss(anchors, proposals, pred_conf, labels, weight_decay):
     angle_l1_loss = smooth_l1_loss(labels=gt_bbox[:, 6],
                                    predictions=proposals[:, 6],
                                    with_sin=True)
+    angle_l1_loss = get_masked_average(angle_l1_loss, anchor_masks)
     tf.summary.scalar('stage1_angle_l1_loss', angle_l1_loss)
     tf.summary.scalar('stage1_angle_sin_bias', get_masked_average(tf.abs(tf.sin(gt_bbox[:, 6] - proposals[:, 6])), anchor_masks))
     tf.summary.scalar('stage1_angle_bias', get_masked_average(tf.abs(gt_bbox[:, 6] - proposals[:, 6]), anchor_masks))
@@ -135,7 +136,7 @@ def loss(anchors, proposals, pred_conf, labels, weight_decay):
     conf_loss = get_masked_average(focal_loss(label=conf_target, pred=pred_conf, alpha=0.25), conf_masks)
     tf.summary.scalar('stage1_conf_loss', conf_loss)
 
-    regular_l2_loss = weight_decay * tf.add_n(tf.get_collection("stage1_l2_loss"))
+    regular_l2_loss = weight_decay * tf.add_n(tf.get_collection("stage1_l2"))
     tf.summary.scalar('stage1_regularization_l2_loss', regular_l2_loss)
 
     total_loss = iou_loss + angle_l1_loss + conf_loss + regular_l2_loss

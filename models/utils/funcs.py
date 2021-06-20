@@ -99,7 +99,7 @@ def merge_batch_anchors(batch_anchors):
     anchor_attr = tf.shape(batch_anchors)[2]
 
     anchors = tf.reshape(batch_anchors, shape=[batch_size*anchor_num_per_batch, anchor_attr])
-    num_list = tf.ones([batch_size], dtype=tf.int32) * anchor_num_per_batch
+    num_list = tf.ones(batch_size, dtype=tf.int32) * anchor_num_per_batch
 
     return anchors, num_list
 
@@ -149,9 +149,9 @@ def get_iou_masks(anchor_ious, low_thres=0.35, high_thres=0.6, force_ignore_thre
     https://stackoverflow.com/questions/54399670/attributeerror-object-has-no-attribute-lazy-read
     '''
 
-    batch_size = anchor_ious.shape[0]  # b
-    num_anchors = anchor_ious.shape[1]  # n
-    masks = tf.Variable(tf.zeros(shape=[batch_size * num_anchors])) # [b * n]
+    batch_size = tf.cast(tf.shape(anchor_ious)[0], dtype=tf.int64)  # b
+    num_anchors = tf.cast(tf.shape(anchor_ious)[1], dtype=tf.int64)  # n
+    masks = tf.Variable(tf.zeros(batch_size * num_anchors)) # [b * n]
 
     matched_anchor_ious = tf.reshape(tf.reduce_max(anchor_ious, axis=2), shape=[-1])  # [b*n]
     positive_idx = tf.where(tf.greater_equal(matched_anchor_ious, high_thres))

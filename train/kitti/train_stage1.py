@@ -52,8 +52,7 @@ decay_batch = training_batch * CONFIG.decay_epochs
 
 input_coors_p, input_features_p, input_num_list_p, input_bbox_p = \
     MODEL.inputs_placeholder(input_channels=1,
-                             bbox_padding_num=CONFIG.bbox_padding,
-                             batch_size=CONFIG.batch_size_stage1)
+                             bbox_padding_num=CONFIG.bbox_padding)
 is_training_p = tf.placeholder(dtype=tf.bool, shape=[], name="is_stage1_training")
 
 
@@ -100,6 +99,8 @@ def train_one_epoch(sess, step, dataset_generator, writer):
     iter = tqdm(range(training_batch)) if is_hvd_root else range(training_batch)
     for _ in iter:
         coors, features, num_list, bboxes = next(dataset_generator)
+        # https://stackoverflow.com/questions/51552199/tf-variable-with-dynamic-shape-from-input-placeholder
+        sess.run(tf.global_variables_initializer(), feed_dict={input_num_list_p: num_list})
         iou, _, summary = sess.run([tf_iou, train_op, tf_summary],
                                     feed_dict={input_coors_p: coors,
                                                input_features_p: features,
@@ -128,6 +129,7 @@ def valid_one_epoch(sess, step, dataset_generator, writer):
     iter = tqdm(range(validation_batch)) if is_hvd_root else range(validation_batch)
     for _, batch_id in enumerate(iter):
         coors, features, num_list, bboxes = next(dataset_generator)
+        sess.run(tf.global_variables_initializer(), feed_dict={input_num_list_p: num_list})
         iou, summary = sess.run([tf_iou, tf_summary],
                                 feed_dict={input_coors_p: coors,
                                            input_features_p: features,
@@ -152,6 +154,7 @@ def valid_one_epoch(sess, step, dataset_generator, writer):
 
 def main():
     with tf.train.MonitoredTrainingSession(hooks=hooks, config=session_config) as mon_sess:
+
         train_generator = DatasetTrain.train_generator()
         valid_generator = DatasetValid.valid_generator()
         best_result = 0.
