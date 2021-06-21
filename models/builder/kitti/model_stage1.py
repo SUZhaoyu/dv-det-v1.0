@@ -93,7 +93,8 @@ def model(input_coors,
                                   offset=DIMENSION_PARAMS['offset'],
                                   anchor_params=ANCHOR_PARAMS)
             proposals, pred_conf = get_proposals_from_anchors(input_anchors=anchors,
-                                                              input_logits=proposal_logits)
+                                                              input_logits=proposal_logits,
+                                                              clip=True)
 
     return anchors, proposals, pred_conf
 
@@ -116,22 +117,25 @@ def loss(anchors, proposals, pred_conf, labels, weight_decay):
 
     anchor_masks = correct_ignored_masks(iou_masks=anchor_iou_masks,
                                          gt_conf=gt_conf)
+    positive_masks = tf.cast(tf.equal(anchor_masks, 1), dtype=tf.float32)
+    conf_masks = tf.cast(tf.equal(anchor_masks, -1), dtype=tf.float32)
+    tf.summary.scalar('positive_anchor_count', tf.reduce_sum(positive_masks))
+
     ious = cal_3d_iou(gt_attrs=gt_bbox,
                       pred_attrs=proposals,
                       clip=False)
-    iou_loss = get_masked_average(1. - ious, anchor_masks)
-    averaged_iou = get_masked_average(ious, anchor_masks)
+    iou_loss = get_masked_average(1. - ious, positive_masks)
+    averaged_iou = get_masked_average(ious, positive_masks)
     tf.summary.scalar('stage1_iou_loss', iou_loss)
 
     angle_l1_loss = smooth_l1_loss(labels=gt_bbox[:, 6],
                                    predictions=proposals[:, 6],
                                    with_sin=True)
-    angle_l1_loss = get_masked_average(angle_l1_loss, anchor_masks)
+    angle_l1_loss = get_masked_average(angle_l1_loss, positive_masks)
     tf.summary.scalar('stage1_angle_l1_loss', angle_l1_loss)
-    tf.summary.scalar('stage1_angle_sin_bias', get_masked_average(tf.abs(tf.sin(gt_bbox[:, 6] - proposals[:, 6])), anchor_masks))
-    tf.summary.scalar('stage1_angle_bias', get_masked_average(tf.abs(gt_bbox[:, 6] - proposals[:, 6]), anchor_masks))
+    tf.summary.scalar('stage1_angle_sin_bias', get_masked_average(tf.abs(tf.sin(gt_bbox[:, 6] - proposals[:, 6])), positive_masks))
+    tf.summary.scalar('stage1_angle_bias', get_masked_average(tf.abs(gt_bbox[:, 6] - proposals[:, 6]), positive_masks))
 
-    conf_masks = tf.cast(tf.greater(anchor_masks, -1), dtype=tf.float32)  # [-1, 0, 1] -> [0, 1, 1]
     conf_target = tf.cast(gt_conf, dtype=tf.float32) * conf_masks  # [-1, 0, 1] * [0, 1, 1] -> [0, 0, 1]
     conf_loss = get_masked_average(focal_loss(label=conf_target, pred=pred_conf, alpha=0.25), conf_masks)
     tf.summary.scalar('stage1_conf_loss', conf_loss)
@@ -142,19 +146,3 @@ def loss(anchors, proposals, pred_conf, labels, weight_decay):
     total_loss = iou_loss + angle_l1_loss + conf_loss + regular_l2_loss
 
     return total_loss, averaged_iou
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

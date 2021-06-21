@@ -28,14 +28,11 @@ __global__ void get_gt_bbox_gpu_kernel(int batch_size, int npoint, int nbbox, in
 //    printf("%d\n", input_accu_list[5]);
     for (int b=blockIdx.x; b<batch_size; b+=gridDim.x) {
         for (int i=threadIdx.x; i<input_num_list[b]; i+=blockDim.x) {
-            output_bbox[input_accu_list[b]*7 + i*7 + 0] = 0.;
-            output_bbox[input_accu_list[b]*7 + i*7 + 1] = 0.;
-            output_bbox[input_accu_list[b]*7 + i*7 + 2] = 0.;
 
             float point_x = input_coors[input_accu_list[b]*3 + i*3 + 0];
             float point_y = input_coors[input_accu_list[b]*3 + i*3 + 1];
             float point_z = input_coors[input_accu_list[b]*3 + i*3 + 2];
-            output_conf[input_accu_list[b] + i] = 0;
+
             for (int j=0; j<nbbox; j++) {
             // [w, l, h, x, y, z, r, cls, diff_idx]
             //  0  1  2  3  4  5  6   7      8

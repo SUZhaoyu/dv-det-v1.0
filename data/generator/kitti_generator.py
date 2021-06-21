@@ -15,7 +15,7 @@ from data.utils.augmentation import rotate, scale, flip, drop_out, shuffle, tran
     get_pasted_point_cloud
 from data.utils.normalization import feature_normalize, bboxes_normalization, convert_threejs_coors, \
     convert_threejs_bbox, normalize_angle
-import train.kitti.kitti_config as config
+import configs.kitti.kitti_config_training as config
 
 # os.environ['MKL_NUM_THREADS'] = '1'
 mkl.set_num_threads(1)
@@ -151,7 +151,6 @@ class Dataset(object):
                         features = points[:, -1:]
 
                         T_rotate, angle = rotate(self.rotate_range, self.rotate_mode)
-                        print(angle)
                         T_scale, scale_xyz = scale(self.scale_range, self.scale_mode)
                         T_flip, flip_y = flip(flip=self.flip)
 

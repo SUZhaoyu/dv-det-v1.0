@@ -3,14 +3,14 @@ import math
 # ===========================================Dataset Configuration=============================================
 
 aug_config = {'nbbox': 256,
-              'rotate_range': math.pi / 4,
+              'rotate_range': 0,
               'rotate_mode': 'u',
-              'scale_range': 0.05,
+              'scale_range': 0.,
               'scale_mode': 'u',
-              'drop_out': 0.1,
+              'drop_out': 0.,
               'flip': False,
-              'shuffle': True,
-              'paste_augmentation': True,
+              'shuffle': False,
+              'paste_augmentation': False,
               'paste_instance_num': 128,
               'maximum_interior_points': 100,
               'normalization': None}

@@ -42,7 +42,6 @@ forge_ignore_thres = 0.1
 
 roi_thres = 0.3
 iou_thres = 0.55
-max_length = 256
 roi_voxel_size = 5
 
 # ===========================================Model Definition=============================================

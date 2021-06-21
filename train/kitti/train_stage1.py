@@ -99,8 +99,6 @@ def train_one_epoch(sess, step, dataset_generator, writer):
     iter = tqdm(range(training_batch)) if is_hvd_root else range(training_batch)
     for _ in iter:
         coors, features, num_list, bboxes = next(dataset_generator)
-        # https://stackoverflow.com/questions/51552199/tf-variable-with-dynamic-shape-from-input-placeholder
-        sess.run(tf.global_variables_initializer(), feed_dict={input_num_list_p: num_list})
         iou, _, summary = sess.run([tf_iou, train_op, tf_summary],
                                     feed_dict={input_coors_p: coors,
                                                input_features_p: features,
@@ -129,7 +127,6 @@ def valid_one_epoch(sess, step, dataset_generator, writer):
     iter = tqdm(range(validation_batch)) if is_hvd_root else range(validation_batch)
     for _, batch_id in enumerate(iter):
         coors, features, num_list, bboxes = next(dataset_generator)
-        sess.run(tf.global_variables_initializer(), feed_dict={input_num_list_p: num_list})
         iou, summary = sess.run([tf_iou, tf_summary],
                                 feed_dict={input_coors_p: coors,
                                            input_features_p: features,
@@ -184,7 +181,6 @@ def main():
                                                  log=is_hvd_root,
                                                  inverse=False,
                                                  save_anyway=False)
-
 
 if __name__ == '__main__':
     main()
