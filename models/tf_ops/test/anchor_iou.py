@@ -66,7 +66,6 @@ if __name__ == '__main__':
 
     anchor_ious = get_anchor_ious(anchors, input_bbox_p[..., :7])
     anchor_iou_masks = get_iou_masks(anchor_ious, 0.35, 0.6)
-
     anchors, anchor_num_list = merge_batch_anchors(anchors)
 
     gt_bbox, gt_conf = get_gt_bbox(input_coors=anchors[:, 3:6],
@@ -79,7 +78,6 @@ if __name__ == '__main__':
 
     anchor_masks = correct_ignored_masks(anchor_iou_masks, gt_conf)
     with tf.Session() as sess:
-        # sess.run(tf.global_variables_initializer(), feed_dict={input_num_list_p: input_num_list})
         for _ in tqdm(range(10)):
             input_coors, input_features, input_num_list, input_labels = next(Dataset.train_generator())
             output_anchors, output_anchor_masks, output_anchor_num_list, output_gt_conf = \
@@ -88,12 +86,6 @@ if __name__ == '__main__':
                                       input_features_p: input_features,
                                       input_num_list_p: input_num_list,
                                       input_bbox_p: input_labels})
-
-
-    # anchor_num_list = anchor_num_list.numpy()
-    # anchor_masks = anchor_masks.numpy()
-    # gt_conf = gt_conf.numpy()
-    # anchors = anchors.numpy()
 
     input_coors = fetch_instance(input_coors, input_num_list, id)
     anchor_masks = fetch_instance(output_anchor_masks, output_anchor_num_list, id)

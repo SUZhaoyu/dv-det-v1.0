@@ -77,12 +77,22 @@ public:
         int npoint = input_coors.dim_size(0);
         int nbbox = gt_bbox.dim_size(1);
 
+        int batch_byte_size = batch_size * sizeof(int);
+        int* input_num_list_ptr_host = (int*)malloc(batch_byte_size);
+        int* input_accu_list_ptr_host = (int*)malloc(batch_byte_size);
+        cudaMemcpy(input_num_list_ptr_host, input_num_list_ptr, batch_byte_size, cudaMemcpyDeviceToHost);
+        input_accu_list_ptr_host[0] = 0;
+
+        for (int b=1; b<batch_size; b++) {
+            input_accu_list_ptr_host[b] = input_accu_list_ptr_host[b-1] + input_num_list_ptr_host[b-1];
+        }
+
         Tensor input_accu_list;
         OP_REQUIRES_OK(context, context->allocate_temp(DataTypeToEnum<int>::value,
                                                        TensorShape{batch_size},
                                                        &input_accu_list));
         int* input_accu_list_ptr = input_accu_list.template flat<int>().data();
-        cudaMemset(input_accu_list_ptr, 0, batch_size * sizeof(int));
+        cudaMemcpy(input_accu_list_ptr, input_accu_list_ptr_host, batch_byte_size, cudaMemcpyHostToDevice);
 
         Tensor* output_bbox = nullptr;
         auto output_bbox_shape = TensorShape({npoint, 7});

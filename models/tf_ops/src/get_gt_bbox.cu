@@ -18,13 +18,7 @@ __global__ void get_gt_bbox_gpu_kernel(int batch_size, int npoint, int nbbox, in
         return;
     }
 //    const float PI = 3.1415927;
-//    if (threadIdx.x == 0 && blockIdx.x == 0) {
-    input_accu_list[0] = 0;
-    for (int b=1; b<batch_size; b++) {
-        input_accu_list[b] = input_accu_list[b-1] + input_num_list[b-1];
-    }
-//    }
-    __syncthreads();
+
 //    printf("%d\n", input_accu_list[5]);
     for (int b=blockIdx.x; b<batch_size; b+=gridDim.x) {
         for (int i=threadIdx.x; i<input_num_list[b]; i+=blockDim.x) {

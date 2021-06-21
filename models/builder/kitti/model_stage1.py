@@ -18,7 +18,7 @@ MODEL_PARAMS = {'xavier': CONFIG.xavier,
 
 DIMENSION_PARAMS = {'dimension': CONFIG.dimension,
                     'offset': CONFIG.offset}
-
+w
 
 BASE_MODEL_PARAMS = CONFIG.base_params
 BEV_RESOLUTION = CONFIG.bev_resolution
@@ -136,7 +136,7 @@ def loss(anchors, proposals, pred_conf, labels, weight_decay):
     tf.summary.scalar('stage1_angle_sin_bias', get_masked_average(tf.abs(tf.sin(gt_bbox[:, 6] - proposals[:, 6])), positive_masks))
     tf.summary.scalar('stage1_angle_bias', get_masked_average(tf.abs(gt_bbox[:, 6] - proposals[:, 6]), positive_masks))
 
-    conf_target = tf.cast(gt_conf, dtype=tf.float32) * conf_masks  # [-1, 0, 1] * [0, 1, 1] -> [0, 0, 1]
+    conf_target = anchor_masks * conf_masks  # [-1, 0, 1] * [0, 1, 1] -> [0, 0, 1]
     conf_loss = get_masked_average(focal_loss(label=conf_target, pred=pred_conf, alpha=0.25), conf_masks)
     tf.summary.scalar('stage1_conf_loss', conf_loss)
 

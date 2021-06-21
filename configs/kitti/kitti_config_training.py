@@ -70,7 +70,7 @@ gpu_list = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7,
 
 batch_size_stage1 = 4
 init_lr_stage1 = 1e-4
-lr_scale_stage1 = True
+lr_scale_stage1 = False
 
 batch_size_stage2 = 4
 init_lr_stage2 = 2e-4
@@ -78,7 +78,7 @@ lr_scale_stage2 = False
 
 decay_epochs = 5
 lr_decay = 0.5
-lr_warm_up = True
+lr_warm_up = False
 weight_decay = 5e-4
 valid_interval = 5
 xavier = False

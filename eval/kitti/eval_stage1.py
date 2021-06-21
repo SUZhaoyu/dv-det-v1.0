@@ -19,7 +19,7 @@ from models.builder.kitti import model_stage1 as MODEL
 
 anchor_size = CONFIG.anchor_size
 # model_path = '/home/tan/tony/dv-det/ckpt-kitti/stage1-test/test/model_0.7087964968982694'
-model_path = '/home/tan/tony/dv-det-v1.0/ckpt-kitti/test/test/model_0.5628006939634806'
+model_path = '/home/tan/tony/dv-det-v1.0/ckpt-kitti/test/test/model_0.5969989594351234'
 data_home = '/home/tan/tony/dv-det/eval/kitti/data'
 visualization = True
 task = 'validation'
