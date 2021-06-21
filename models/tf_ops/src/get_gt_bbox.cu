@@ -18,12 +18,12 @@ __global__ void get_gt_bbox_gpu_kernel(int batch_size, int npoint, int nbbox, in
         return;
     }
 //    const float PI = 3.1415927;
-    if (threadIdx.x == 0 && blockIdx.x == 0) {
-        input_accu_list[0] = 0;
-        for (int b=1; b<batch_size; b++) {
-            input_accu_list[b] = input_accu_list[b-1] + input_num_list[b-1];
-        }
+//    if (threadIdx.x == 0 && blockIdx.x == 0) {
+    input_accu_list[0] = 0;
+    for (int b=1; b<batch_size; b++) {
+        input_accu_list[b] = input_accu_list[b-1] + input_num_list[b-1];
     }
+//    }
     __syncthreads();
 //    printf("%d\n", input_accu_list[5]);
     for (int b=blockIdx.x; b<batch_size; b+=gridDim.x) {
@@ -55,6 +55,8 @@ __global__ void get_gt_bbox_gpu_kernel(int batch_size, int npoint, int nbbox, in
                         abs(rot_rel_point_y) <= bbox_l / 2 + padding_offset &&
                         (abs(rel_point_z) <= bbox_h / 2 + padding_offset || ignore_height)) {
 
+//                        printf("%d\n", b);
+
                         output_bbox[input_accu_list[b]*7 + i*7 + 0] = bbox_w;
                         output_bbox[input_accu_list[b]*7 + i*7 + 1] = bbox_l;
                         output_bbox[input_accu_list[b]*7 + i*7 + 2] = bbox_h;
@@ -65,6 +67,7 @@ __global__ void get_gt_bbox_gpu_kernel(int batch_size, int npoint, int nbbox, in
 
 //                        if (bbox_diff <= diff_thres && bbox_cls == 0) {
                         if (bbox_diff <= diff_thres && bbox_cls <= cls_thres) {
+//                            printf("%d\n", b);
                             // Here we only take cars into consideration, while vans are excluded and give the foreground labels as -1 (ignored).
                             // TODO: need to change the category class accordingly to the expected detection target.
                             output_conf[input_accu_list[b] + i] = 1;

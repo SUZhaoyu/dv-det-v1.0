@@ -82,7 +82,7 @@ def get_learning_rate(init_lr, current_step, decay_step, decay_rate, hvd_size=1,
         staircase=True)
     if warm_up:
         warm_up_learning_rate = 0.9 * init_lr / decay_step * tf.cast(tf.identity(current_step),
-                                                                             dtype=tf.float32) + 0.1 * init_lr
+                                                                     dtype=tf.float32) + 0.1 * init_lr
         # warm_up_learning_rate = tf.cast(warm_up_learning_rate, dtype=tf.float32)
         learning_rate = tf.cond(tf.less_equal(current_step, int(decay_step)),
                                 lambda: warm_up_learning_rate,

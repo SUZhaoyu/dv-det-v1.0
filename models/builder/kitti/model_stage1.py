@@ -118,7 +118,7 @@ def loss(anchors, proposals, pred_conf, labels, weight_decay):
     anchor_masks = correct_ignored_masks(iou_masks=anchor_iou_masks,
                                          gt_conf=gt_conf)
     positive_masks = tf.cast(tf.equal(anchor_masks, 1), dtype=tf.float32)
-    conf_masks = tf.cast(tf.equal(anchor_masks, -1), dtype=tf.float32)
+    conf_masks = tf.cast(tf.greater_equal(anchor_masks, 0), dtype=tf.float32)
     tf.summary.scalar('positive_anchor_count', tf.reduce_sum(positive_masks))
 
     ious = cal_3d_iou(gt_attrs=gt_bbox,
@@ -143,6 +143,6 @@ def loss(anchors, proposals, pred_conf, labels, weight_decay):
     regular_l2_loss = weight_decay * tf.add_n(tf.get_collection("stage1_l2"))
     tf.summary.scalar('stage1_regularization_l2_loss', regular_l2_loss)
 
-    total_loss = iou_loss + angle_l1_loss + conf_loss + regular_l2_loss
+    total_loss = 2 * iou_loss + angle_l1_loss + conf_loss + regular_l2_loss
 
     return total_loss, averaged_iou

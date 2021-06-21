@@ -24,7 +24,7 @@ from models.builder.kitti import model_stage1 as MODEL
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 batch_size = 4
-id = 0
+id = 3
 dimension = [100., 140., 9.]
 offset = [10., 70., 5.]
 anchor_size = [1.6, 3.9, 1.5]
@@ -68,7 +68,7 @@ if __name__ == '__main__':
                                    input_num_list=num_list,
                                    bboxes=input_bbox_p,
                                    padding_offset=CONFIG.padding_offset,
-                                   diff_thres=0,
+                                   diff_thres=3,
                                    cls_thres=CONFIG.cls_thres,
                                    ignore_height=True)
 
@@ -101,7 +101,7 @@ if __name__ == '__main__':
     gt_conf = fetch_instance(output_gt_conf, output_anchor_num_list, id)
     output_gt_bbox = fetch_instance(output_gt_bbox, output_anchor_num_list, id)
 
-    output_anchors = output_gt_bbox#[anchor_masks == 1, :]
+    output_anchors = output_gt_bbox[anchor_masks == 1, :]
 
     plot_points(coors=input_coors,
                 bboxes=output_anchors,

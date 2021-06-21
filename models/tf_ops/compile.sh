@@ -9,8 +9,8 @@ CUDA_NVCC="/usr/local/cuda/bin/nvcc"
 # TODO: Add --use_fast_math flag.
 
 
-#$CUDA_NVCC src/get_gt_bbox.cu -o build/get_gt_bbox.cu.o -c ${TF_CFLAGS[@]} -D GOOGLE_CUDA=1 -x cu -Xcompiler -fPIC
-#g++ -std=c++11 src/get_gt_bbox.cpp build/get_gt_bbox.cu.o -o build/get_gt_bbox.so -shared ${TF_CFLAGS[@]} -fPIC -lcudart ${TF_LFLAGS[@]} -L /usr/local/cuda/lib64/ -I /usr/local/cuda/include
+$CUDA_NVCC src/get_gt_bbox.cu -o build/get_gt_bbox.cu.o -c ${TF_CFLAGS[@]} -D GOOGLE_CUDA=1 -x cu -Xcompiler -fPIC
+g++ -std=c++11 src/get_gt_bbox.cpp build/get_gt_bbox.cu.o -o build/get_gt_bbox.so -shared ${TF_CFLAGS[@]} -fPIC -lcudart ${TF_LFLAGS[@]} -L /usr/local/cuda/lib64/ -I /usr/local/cuda/include
 #
 #$CUDA_NVCC src/grid_sampling.cu -o build/grid_sampling.cu.o -c ${TF_CFLAGS[@]} -D GOOGLE_CUDA=1 -x cu -Xcompiler -fPIC
 #g++ -std=c++11 src/grid_sampling.cpp build/grid_sampling.cu.o -o build/grid_sampling.so -shared ${TF_CFLAGS[@]} -fPIC -lcudart ${TF_LFLAGS[@]} -L /usr/local/cuda/lib64/ -I /usr/local/cuda/include
@@ -46,5 +46,5 @@ CUDA_NVCC="/usr/local/cuda/bin/nvcc"
 #$CUDA_NVCC src/voxel_sampling_idx_binary.cu -o build/voxel_sampling_idx_binary.cu.o -c ${TF_CFLAGS[@]} -D GOOGLE_CUDA=1 -x cu -Xcompiler -fPIC --use_fast_math
 #g++ -std=c++11 src/voxel_sampling_idx_binary.cpp build/voxel_sampling_idx_binary.cu.o -o build/voxel_sampling_idx_binary.so -shared ${TF_CFLAGS[@]} -fPIC -lcudart ${TF_LFLAGS[@]} -L /usr/local/cuda/lib64/ -I /usr/local/cuda/include
 #
-$CUDA_NVCC src/dense_voxelization.cu -o build/dense_voxelization.cu.o -c ${TF_CFLAGS[@]} -D GOOGLE_CUDA=1 -x cu -Xcompiler -fPIC
-g++ -std=c++11 src/dense_voxelization.cpp build/dense_voxelization.cu.o -o build/dense_voxelization.so -shared ${TF_CFLAGS[@]} -fPIC -lcudart ${TF_LFLAGS[@]} -L /usr/local/cuda/lib64/ -I /usr/local/cuda/include
+#$CUDA_NVCC src/dense_voxelization.cu -o build/dense_voxelization.cu.o -c ${TF_CFLAGS[@]} -D GOOGLE_CUDA=1 -x cu -Xcompiler -fPIC
+#g++ -std=c++11 src/dense_voxelization.cpp build/dense_voxelization.cu.o -o build/dense_voxelization.so -shared ${TF_CFLAGS[@]} -fPIC -lcudart ${TF_LFLAGS[@]} -L /usr/local/cuda/lib64/ -I /usr/local/cuda/include

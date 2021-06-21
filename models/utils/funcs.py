@@ -160,20 +160,15 @@ def get_iou_masks(anchor_ious, low_thres=0.35, high_thres=0.6, force_ignore_thre
     matched_anchor_ious = tf.reshape(tf.reduce_max(anchor_ious, axis=2), shape=[-1])  # [b*n]
     positive_idx = tf.where(tf.greater_equal(matched_anchor_ious, high_thres))
     masks = tf.numpy_function(element_replacement, [masks, positive_idx, 1], tf.float32)
-    # masks = tf.scatter_nd_update(masks, positive_idx, tf.ones(positive_idx.shape[0]))
-    # masks = tf.scatter_nd_update(masks, positive_idx, tf.ones(tf.shape(positive_idx)[0]))
     ignore_idx = tf.where(tf.logical_and(tf.less(matched_anchor_ious, high_thres), tf.greater(matched_anchor_ious, low_thres)))
-    # masks = tf.scatter_nd_update(masks, ignore_idx, tf.ones(tf.shape(ignore_idx)[0]) * -1)
     masks = tf.numpy_function(element_replacement, [masks, ignore_idx, -1], tf.float32)
 
     max_match_idx = tf.argmax(anchor_ious, axis=1)  # [b, k] in (0, n)
     batch_idx_offset = tf.expand_dims(tf.range(batch_size, dtype=tf.int64) * num_anchors, axis=-1)  # [b, 1]
     max_match_idx = tf.expand_dims(tf.reshape(max_match_idx + batch_idx_offset, shape=[-1]), axis=1) # [b*k, 1]
-    # masks = tf.scatter_nd_update(masks, max_match_idx, tf.ones(tf.shape(max_match_idx)[0]))  # in {-1, 0, 1}
     masks = tf.numpy_function(element_replacement, [masks, max_match_idx, 1], tf.float32)
 
     min_iou_idx = tf.where(tf.logical_and(tf.less(matched_anchor_ious, force_ignore_thres), tf.equal(masks, 1)))
-    # masks = tf.scatter_nd_update(masks, min_iou_idx, tf.zeros(tf.shape(min_iou_idx)[0]))
     masks = tf.numpy_function(element_replacement, [masks, min_iou_idx, 0], tf.float32)
 
     return masks
@@ -181,7 +176,6 @@ def get_iou_masks(anchor_ious, low_thres=0.35, high_thres=0.6, force_ignore_thre
 def correct_ignored_masks(iou_masks, gt_conf):
     ignored_positive_idx = tf.where(tf.logical_and(tf.equal(iou_masks, 1), tf.equal(gt_conf, -1)))
     masks_weight = tf.ones_like(iou_masks)
-    # masks_weight = tf.scatter_nd_update(masks_weight, ignored_positive_idx, tf.ones(tf.shape(ignored_positive_idx)[0])*-1)
     masks_weight = tf.numpy_function(element_replacement, [masks_weight, ignored_positive_idx, -1], tf.float32)
     return iou_masks * masks_weight
 
