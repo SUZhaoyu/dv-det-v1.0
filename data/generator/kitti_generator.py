@@ -151,6 +151,7 @@ class Dataset(object):
                         features = points[:, -1:]
 
                         T_rotate, angle = rotate(self.rotate_range, self.rotate_mode)
+                        print(angle)
                         T_scale, scale_xyz = scale(self.scale_range, self.scale_mode)
                         T_flip, flip_y = flip(flip=self.flip)
 
@@ -168,8 +169,9 @@ class Dataset(object):
                             x, y, z = transform(np.array([x, y, z]), T_coors)
                             w, l, h = transform(np.array([w, l, h]), T_scale)
                             r += angle
+
                             if flip_y == -1:
-                                r = (-1) ** int(r <= 0) * np.pi - r
+                                r = np.pi - r
 
                             r = normalize_angle(r)
 
@@ -256,7 +258,7 @@ if __name__ == '__main__':
                   'scale_range': 0.05,
                   'scale_mode': 'u',
                   'drop_out': 0.1,
-                  'flip': False,
+                  'flip': True,
                   'shuffle': True,
                   'paste_augmentation': True,
                   'paste_instance_num': 128,

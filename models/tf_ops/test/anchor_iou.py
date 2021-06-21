@@ -65,7 +65,7 @@ if __name__ == '__main__':
                           anchor_params=anchor_param_list)
 
     anchor_ious = get_anchor_ious(anchors, input_bbox_p[..., :7])
-    anchor_iou_masks =  get_iou_masks(anchor_ious, 0.35, 0.6)
+    anchor_iou_masks = get_iou_masks(anchor_ious, 0.35, 0.6)
 
     anchors, anchor_num_list = merge_batch_anchors(anchors)
 
