@@ -1,11 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="dv-det-v1.0@gx4" remoteFilesAllowedToDisappearOnAutoupload="false" autoUploadExternalChanges="true">
+  <component name="PublishConfigData" autoUpload="Always" serverName="dv-det-v1.0@gx4:22" autoUploadExternalChanges="true">
     <serverData>
       <paths name="dv-det-v1.0@gx4">
         <serverdata>
           <mappings>
             <mapping deploy="/" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="dv-det-v1.0@gx4:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/tan/tony/dv-det-v1.0" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>

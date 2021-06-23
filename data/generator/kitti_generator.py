@@ -34,7 +34,7 @@ default_config = {'nbbox': config.bbox_padding,
                   'normalization': None}
 
 
-class Dataset(object):
+class KittiDataset(object):
     def __init__(self,
                  task,
                  batch_size=16,

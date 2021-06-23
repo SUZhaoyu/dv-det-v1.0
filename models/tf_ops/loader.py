@@ -15,6 +15,8 @@ def grid_sampling(input_coors,
                   resolution,
                   dimension,
                   offset):
+    if type(resolution) is float:
+        resolution = [resolution] * 3
     output_idx, output_num_list = grid_sampling_exe.grid_sampling_op(input_coors=input_coors + offset,
                                                                      input_num_list=input_num_list,
                                                                      dimension=dimension,

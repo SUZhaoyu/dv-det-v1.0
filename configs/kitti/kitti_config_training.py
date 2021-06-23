@@ -22,8 +22,8 @@ cls_thres = 0
 
 # ===========================================Dimension Settings=============================================
 
-dimension = [140., 140., 4.]
-offset = [50., 50., 3.]
+dimension = [100., 160., 4.]
+offset = [10., 80., 3.]
 bev_resolution = [0.4, 0.4, 0.8]
 padding_offset = 0.2
 

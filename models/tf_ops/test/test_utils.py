@@ -141,6 +141,7 @@ class TimeLiner:
         with open(f_name, 'w') as f:
             json.dump(self._timeline_dict, f)
 
+
 def get_points_from_dense_voxels(voxels, resolution, offset, mask=0):
     offset = np.array(offset)
     output_coors = []
@@ -157,6 +158,9 @@ def get_points_from_dense_voxels(voxels, resolution, offset, mask=0):
     output_features = np.array(output_features)
 
     return output_coors, output_features
+
+if __name__ == '__main__':
+    print(" ")
 
 
 

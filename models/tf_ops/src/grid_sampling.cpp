@@ -29,7 +29,7 @@ REGISTER_OP("GridSamplingOp")
     .Output("output_idx: int32")
     .Output("output_num_list: int32")
     .Attr("dimension: list(float)")
-    .Attr("resolution: float")
+    .Attr("resolution: list(float)")
     .SetShapeFn([](InferenceContext* c){
         ShapeHandle input_coors_shape;
         TF_RETURN_IF_ERROR(c->WithRank(c->input(0), 2, &input_coors_shape));
@@ -45,8 +45,9 @@ REGISTER_OP("GridSamplingOp")
 
     }); // InferenceContext
 
-void grid_sampling_gpu_launcher(int batch_size, int input_point_num, float resolution,
-                                int grid_w, int grid_l, int grid_h,
+void grid_sampling_gpu_launcher(int batch_size, int input_point_num,
+                                std::vector<float> resolution,
+                                std::vector<int> grid_dims,
                                 const float* input_coors,
                                 const int* input_num_list,
                                 int* input_accu_list,
@@ -59,10 +60,10 @@ public:
     explicit GridSamplingOp(OpKernelConstruction* context): OpKernel(context) {
     OP_REQUIRES_OK(context, context->GetAttr("resolution", &resolution));
     OP_REQUIRES_OK(context, context->GetAttr("dimension", &dimension));
-    OP_REQUIRES(context, resolution > 0,
-                errors::InvalidArgument("Resolution has to be greater than 0"));
+    OP_REQUIRES(context, resolution.size() == 3,
+                errors::InvalidArgument("Resolution has to be 3-D for GridSamplingOp."));
     OP_REQUIRES(context, dimension.size() == 3,
-                errors::InvalidArgument("Dimension has to be 3-D for Voxel Sample Operation."));
+                errors::InvalidArgument("Dimension has to be 3-D for GridSamplingOp."));
     }
     void Compute(OpKernelContext* context) override {
 
@@ -78,12 +79,18 @@ public:
 
         int input_point_num = input_coors.dim_size(0);
         int batch_size = input_num_list.dim_size(0);
-        int grid_w = (int)floor(dimension[0] / resolution);
-        int grid_l = (int)floor(dimension[1] / resolution);
-        int grid_h = (int)floor(dimension[2] / resolution);
-        if (INT_MAX / grid_h / grid_l / grid_w < batch_size){
+        std::vector<int> grid_dims {(int)ceil(dimension[0] / resolution[0]),
+                                    (int)ceil(dimension[1] / resolution[1]),
+                                    (int)ceil(dimension[2] / resolution[2])};
+
+        printf("GridSamplingOp Dimension: %f, %f, %f; Resolution: %f, %f, %f; Grid: %d, %d, %d\n",
+                dimension[0], dimension[1], dimension[2],
+                resolution[0], resolution[1], resolution[2],
+                grid_dims[0], grid_dims[1], grid_dims[2]);
+
+        if (INT_MAX / grid_dims[0] / grid_dims[1] / grid_dims[2] < batch_size){
             printf("GridSamplingOp ERROR: size of grid buffer %d x [%d x %d x %d] exceeds INT32 range: %d.\n",
-	                batch_size, grid_w, grid_l, grid_h, INT_MAX);}
+	                batch_size, grid_dims[0], grid_dims[1], grid_dims[2], INT_MAX);}
 
 
         int* input_num_list_ptr_host = (int*)malloc(batch_size*sizeof(int));
@@ -109,10 +116,10 @@ public:
 
         Tensor grid_buffer;
         OP_REQUIRES_OK(context, context->allocate_temp(DataTypeToEnum<int>::value,
-                                                       TensorShape{batch_size, grid_w, grid_l, grid_h},
+                                                       TensorShape{batch_size, grid_dims[0], grid_dims[1], grid_dims[2]},
                                                        &grid_buffer));
         int* grid_buffer_ptr = grid_buffer.template flat<int>().data();
-        cudaMemset(grid_buffer_ptr, 0, batch_size*grid_w*grid_l*grid_h*sizeof(int));
+        cudaMemset(grid_buffer_ptr, 0, batch_size*grid_dims[0]*grid_dims[1]*grid_dims[2]*sizeof(int));
 
 
         Tensor* output_num_list = nullptr;
@@ -123,8 +130,9 @@ public:
 
 //        printf("***************Here******************\n");
 
-        grid_sampling_gpu_launcher(batch_size, input_point_num, resolution,
-                                   grid_w, grid_l, grid_h,
+        grid_sampling_gpu_launcher(batch_size, input_point_num,
+                                   resolution,
+                                   grid_dims,
                                    input_coors_ptr,
                                    input_num_list_ptr,
                                    input_accu_list_ptr,
@@ -165,11 +173,11 @@ public:
         free(output_idx_temp_ptr_host);
         free(output_num_list_ptr_host);
         free(input_accu_list_ptr_host);
-//        cudaFree(grid_buffer_ptr);
+        cudaFree(grid_buffer_ptr);
 //        cudaFree(input_accu_list_ptr);
     }
 private:
-    float resolution;
     std::vector<float> dimension;
+    std::vector<float> resolution;
 };
 REGISTER_KERNEL_BUILDER(Name("GridSamplingOp").Device(DEVICE_GPU), GridSamplingOp);

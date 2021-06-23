@@ -18,7 +18,7 @@ MODEL_PARAMS = {'xavier': CONFIG.xavier,
 
 DIMENSION_PARAMS = {'dimension': CONFIG.dimension,
                     'offset': CONFIG.offset}
-w
+
 
 BASE_MODEL_PARAMS = CONFIG.base_params
 BEV_RESOLUTION = CONFIG.bev_resolution
