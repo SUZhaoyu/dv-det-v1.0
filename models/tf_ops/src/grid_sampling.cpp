@@ -83,10 +83,10 @@ public:
                                     (int)ceil(dimension[1] / resolution[1]),
                                     (int)ceil(dimension[2] / resolution[2])};
 
-        printf("GridSamplingOp Dimension: %f, %f, %f; Resolution: %f, %f, %f; Grid: %d, %d, %d\n",
-                dimension[0], dimension[1], dimension[2],
-                resolution[0], resolution[1], resolution[2],
-                grid_dims[0], grid_dims[1], grid_dims[2]);
+//        printf("GridSamplingOp Dimension: %f, %f, %f; Resolution: %f, %f, %f; Grid: %d, %d, %d\n",
+//                dimension[0], dimension[1], dimension[2],
+//                resolution[0], resolution[1], resolution[2],
+//                grid_dims[0], grid_dims[1], grid_dims[2]);
 
         if (INT_MAX / grid_dims[0] / grid_dims[1] / grid_dims[2] < batch_size){
             printf("GridSamplingOp ERROR: size of grid buffer %d x [%d x %d x %d] exceeds INT32 range: %d.\n",

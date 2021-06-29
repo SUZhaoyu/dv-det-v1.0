@@ -214,6 +214,7 @@ __device__ inline float box_overlap(const float *box_a, const float *box_b){
 
 // iou_bev => iou3d
 __device__ inline float iou3d(const float *box_a, const float *box_b, const float* box_a_z, const float* box_b_z, bool ignore_height){
+//    printf("iou3d executed\n");
     // params: box_a (5) [x1, y1, x2, y2, angle]
     // params: box_b (5) [x1, y1, x2, y2, angle]
     // params: box_a_z (2) [z1min, z1max]

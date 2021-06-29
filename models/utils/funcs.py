@@ -164,12 +164,10 @@ def get_iou_masks(anchor_ious, low_thres=0.35, high_thres=0.6, force_ignore_thre
     ignore_idx = tf.where(tf.logical_and(tf.less(matched_anchor_ious, high_thres), tf.greater(matched_anchor_ious, low_thres)))
     masks = tf.numpy_function(element_replacement, [masks, ignore_idx, -1], tf.int32)
 
-
-
-    # max_match_idx = tf.argmax(anchor_ious, axis=1)  # [b, k] in (0, n)
-    # batch_idx_offset = tf.expand_dims(tf.range(batch_size, dtype=tf.int64) * num_anchors, axis=-1)  # [b, 1]
-    # max_match_idx = tf.expand_dims(tf.reshape(max_match_idx + batch_idx_offset, shape=[-1]), axis=1) # [b*k, 1]
-    # masks = tf.numpy_function(element_replacement, [masks, max_match_idx, 1], tf.int32)
+    max_match_idx = tf.argmax(anchor_ious, axis=1)  # [b, k] in range [0, n)
+    batch_idx_offset = tf.expand_dims(tf.range(batch_size, dtype=tf.int64) * num_anchors, axis=-1)  # [b, 1]
+    max_match_idx = tf.expand_dims(tf.reshape(max_match_idx + batch_idx_offset, shape=[-1]), axis=1)  # [b*k, 1]
+    masks = tf.numpy_function(element_replacement, [masks, max_match_idx, 1], tf.int32)
     #
     # min_iou_idx = tf.where(tf.logical_and(tf.less(matched_anchor_ious, force_ignore_thres), tf.equal(masks, 1)))
     # masks = tf.numpy_function(element_replacement, [masks, min_iou_idx, 0], tf.int32)
@@ -178,8 +176,8 @@ def get_iou_masks(anchor_ious, low_thres=0.35, high_thres=0.6, force_ignore_thre
 
 def correct_ignored_masks(iou_masks, gt_conf):
     ignored_positive_idx = tf.where(tf.logical_and(tf.equal(iou_masks, 1), tf.equal(gt_conf, -1)))
-    masks_weight = tf.ones_like(iou_masks)
-    masks_weight = tf.numpy_function(element_replacement, [masks_weight, ignored_positive_idx, -1], tf.float32)
+    masks_weight = tf.cast(tf.ones_like(iou_masks), dtype=tf.int32)
+    masks_weight = tf.numpy_function(element_replacement, [masks_weight, ignored_positive_idx, -1], tf.int32)
     return iou_masks * masks_weight
 
 

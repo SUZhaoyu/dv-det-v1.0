@@ -5,7 +5,7 @@ fi
 TF_CFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))') )
 TF_LFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))') )
 
-CUDA_NVCC="/usr/local/cuda-10.0/bin/nvcc"
+CUDA_NVCC="/usr/local/cuda/bin/nvcc"
 # TODO: Add --use_fast_math flag.
 
 echo "Using nvcc: $CUDA_NVCC"
@@ -50,3 +50,14 @@ g++ -std=c++11 src/voxel_sampling_idx_binary.cpp build/voxel_sampling_idx_binary
 #
 $CUDA_NVCC src/dense_voxelization.cu -o build/dense_voxelization.cu.o -c ${TF_CFLAGS[@]} -D GOOGLE_CUDA=1 -x cu -Xcompiler -fPIC
 g++ -std=c++11 src/dense_voxelization.cpp build/dense_voxelization.cu.o -o build/dense_voxelization.so -shared ${TF_CFLAGS[@]} -fPIC -lcudart ${TF_LFLAGS[@]} -L /usr/local/cuda/lib64/ -I /usr/local/cuda/include
+
+
+
+
+
+
+
+
+
+
+echo "Compilation completed."

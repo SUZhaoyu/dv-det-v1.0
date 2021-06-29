@@ -28,12 +28,12 @@ from models.tf_ops.test.test_utils import fetch_instance, plot_points
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-batch_size = 1
-id = 0
+batch_size = 6
+id = 4
 anchor_size = [1.6, 3.9, 1.5]
 bev_resolution = [0.4, 0.4, 0.8]
 low_thres = 0.05
-high_thres = 0.2
+high_thres = 0.9
 
 DIMENSION_PARAMS = {'dimension': config.dimension,
                     'offset': config.offset}
@@ -91,8 +91,8 @@ if __name__ == '__main__':
     with tf.Session() as sess:
         for _ in tqdm(range(3)):
             input_coors, input_features, input_num_list, input_labels = next(Dataset.train_generator())
-            output_anchors, output_anchor_ious, output_anchor_masks, output_anchor_num_list, output_gt_bbox, output_gt_conf = \
-                sess.run([anchors, anchor_ious, anchor_iou_masks, anchor_num_list, gt_bbox, gt_conf],
+            output_coors, output_anchors, output_anchor_ious, output_anchor_masks, output_anchor_num_list, output_gt_bbox, output_gt_conf = \
+                sess.run([coors, anchors, anchor_ious, anchor_iou_masks, anchor_num_list, gt_bbox, gt_conf],
                            feed_dict={input_coors_p: input_coors,
                                       input_features_p: input_features,
                                       input_num_list_p: input_num_list,
@@ -113,16 +113,19 @@ if __name__ == '__main__':
     input_rgbs = np.zeros_like(input_coors) + [255, 0, 255]
     anchor_coors = output_anchors[:, 3:6]
     anchor_rgbs = np.zeros_like(anchor_coors)
-    anchor_rgbs[positive_masks, :] += [255, 255, 255]
+    anchor_rgbs[positive_masks, :] += [192, 192, 192]
     anchor_rgbs[negative_masks, :] += [64, 64, 64]
-    anchor_rgbs[ignore_masks, :] += [128, 128, 128]
+    # anchor_rgbs[ignore_masks, :] += [128, 128, 128]
 
-    output_coors = np.concatenate([input_coors, anchor_coors], axis=0)
-    output_rgbs = np.concatenate([input_rgbs, anchor_rgbs], axis=0)
+    anchor_coors = output_anchors[ignore_masks, 3:6]
+    anchor_rgbs = np.zeros_like(anchor_coors)
+
+    output_coors = np.concatenate([anchor_coors], axis=0)
+    output_rgbs = np.concatenate([anchor_rgbs], axis=0)
 
 
     # output_gt_bbox = output_gt_bbox[output_anchor_masks == 1, :]
-    # positive_anchors = output_anchors[output_anchor_masks == 1, :]
+    positive_anchors = output_anchors[positive_masks, :]
     # positive_anchor_coors = output_anchors[output_anchor_masks == 1, 3:6]
     # negative_anchor_coors = output_anchors[output_anchor_masks == 0, 3:6]
     # ignore_anchor_coors = output_anchors[output_anchor_masks == -1, 3:6]
@@ -149,11 +152,11 @@ if __name__ == '__main__':
     #
     #
     # gt_bbox_params = convert_threejs_bbox_with_assigned_colors(output_gt_bbox, colors=output_color_names) if len(output_gt_bbox) > 0 else []
-    # anchor_params = convert_threejs_bbox_with_assigned_colors(positive_anchors, colors=output_color_names) if len(positive_anchors) > 0 else []
+    anchor_params = convert_threejs_bbox_with_assigned_colors(positive_anchors, colors='red') if len(positive_anchors) > 0 else []
     # bbox_params = anchor_params
 
     Converter.compile(coors=convert_threejs_coors(output_coors),
                       intensity=None,
                       default_rgb=output_rgbs,
-                      bbox_params=None,
+                      bbox_params=anchor_params,
                       task_name='anchor_iou_det-1')

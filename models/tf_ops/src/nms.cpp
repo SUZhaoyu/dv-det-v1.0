@@ -103,6 +103,8 @@ public:
         float* output_iou3d_ptr = output_iou3d->template flat<float>().data();
         cudaMemset(output_iou3d_ptr, 0, batch_size*num_a*num_b*sizeof(float));
 
+        printf("BoxesIouOp compute loaded, num_a=%d, num_b=%d.\n", num_a, num_b);
+
         for (int b=0; b<batch_size; ++b) {
             boxesIouGPUKernelLauncher(
                 ignore_height,
