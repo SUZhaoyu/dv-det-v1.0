@@ -13,7 +13,7 @@ sys.path.append(HOME)
 
 from models.builder.kitti import model_stage1 as MODEL
 from configs.kitti import kitti_config_training as CONFIG
-from data.generator.kitti_generator import Dataset
+from data.generator.kitti_generator import KittiDataset
 from train.train_utils import get_train_op, get_config, save_best_sess, set_training_controls
 
 hvd.init()
@@ -33,18 +33,18 @@ else:
 if is_hvd_root:
     copyfile(CONFIG.config_dir, join(log_dir, CONFIG.config_dir.split('/')[-1]))
 
-DatasetTrain = Dataset(task="training",
-                       batch_size=CONFIG.batch_size_stage1,
-                       config=CONFIG.aug_config,
-                       num_worker=CONFIG.num_worker,
-                       hvd_size=hvd.size(),
-                       hvd_id=hvd.rank())
+DatasetTrain = KittiDataset(task="training",
+                            batch_size=CONFIG.batch_size_stage1,
+                            config=CONFIG.aug_config,
+                            num_worker=CONFIG.num_worker,
+                            hvd_size=hvd.size(),
+                            hvd_id=hvd.rank())
 
-DatasetValid = Dataset(task="validation",
-                       validation=True,
-                       batch_size=CONFIG.batch_size_stage1,
-                       hvd_size=hvd.size(),
-                       hvd_id=hvd.rank())
+DatasetValid = KittiDataset(task="validation",
+                            validation=True,
+                            batch_size=CONFIG.batch_size_stage1,
+                            hvd_size=hvd.size(),
+                            hvd_id=hvd.rank())
 
 training_batch = DatasetTrain.batch_sum
 validation_batch = DatasetValid.batch_sum

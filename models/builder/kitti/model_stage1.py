@@ -104,7 +104,7 @@ def loss(anchors, proposals, pred_conf, labels, weight_decay):
     anchor_iou_masks = get_iou_masks(anchor_ious=anchor_ious,
                                      low_thres=CONFIG.negative_thres,
                                      high_thres=CONFIG.positive_thres,
-                                     force_ignore_thres=CONFIG.forge_ignore_thres)
+                                     force_ignore_thres=CONFIG.force_negative_thres)
 
     anchors, num_list = merge_batch_anchors(anchors)
     gt_bbox, gt_conf = get_gt_bbox(input_coors=anchors[:, 3:6],
@@ -136,8 +136,8 @@ def loss(anchors, proposals, pred_conf, labels, weight_decay):
     tf.summary.scalar('stage1_angle_sin_bias', get_masked_average(tf.abs(tf.sin(gt_bbox[:, 6] - proposals[:, 6])), positive_masks))
     tf.summary.scalar('stage1_angle_bias', get_masked_average(tf.abs(gt_bbox[:, 6] - proposals[:, 6]), positive_masks))
 
-    conf_target = anchor_masks * conf_masks  # [-1, 0, 1] * [0, 1, 1] -> [0, 0, 1]
-    conf_loss = get_masked_average(focal_loss(label=conf_target, pred=pred_conf, alpha=0.25), conf_masks)
+    conf_target = tf.cast(anchor_masks, dtype=tf.float32) * conf_masks  # [-1, 0, 1] * [0, 1, 1] -> [0, 0, 1]
+    conf_loss = get_masked_average(focal_loss(label=conf_target, pred=pred_conf, alpha=0.75), conf_masks)
     tf.summary.scalar('stage1_conf_loss', conf_loss)
 
     regular_l2_loss = weight_decay * tf.add_n(tf.get_collection("stage1_l2"))

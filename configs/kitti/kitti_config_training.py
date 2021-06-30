@@ -38,7 +38,7 @@ output_pooling_size = 5
 output_attr = 8
 positive_thres = 0.6
 negative_thres = 0.35
-forge_ignore_thres = 0.1
+force_negative_thres = 0.1
 
 roi_thres = 0.3
 iou_thres = 0.55

@@ -32,8 +32,8 @@ batch_size = 6
 id = 4
 anchor_size = [1.6, 3.9, 1.5]
 bev_resolution = [0.4, 0.4, 0.8]
-low_thres = 0.05
-high_thres = 0.9
+low_thres = 0.35
+high_thres = 0.6
 
 DIMENSION_PARAMS = {'dimension': config.dimension,
                     'offset': config.offset}
@@ -87,12 +87,12 @@ if __name__ == '__main__':
                                    cls_thres=0,
                                    ignore_height=True)
 
-    # anchor_masks = correct_ignored_masks(anchor_iou_masks, gt_conf)
+    anchor_masks = correct_ignored_masks(anchor_iou_masks, gt_conf)
     with tf.Session() as sess:
         for _ in tqdm(range(3)):
             input_coors, input_features, input_num_list, input_labels = next(Dataset.train_generator())
             output_coors, output_anchors, output_anchor_ious, output_anchor_masks, output_anchor_num_list, output_gt_bbox, output_gt_conf = \
-                sess.run([coors, anchors, anchor_ious, anchor_iou_masks, anchor_num_list, gt_bbox, gt_conf],
+                sess.run([coors, anchors, anchor_ious, anchor_masks, anchor_num_list, gt_bbox, gt_conf],
                            feed_dict={input_coors_p: input_coors,
                                       input_features_p: input_features,
                                       input_num_list_p: input_num_list,
@@ -110,18 +110,16 @@ if __name__ == '__main__':
     negative_masks = np.squeeze(np.argwhere(output_anchor_masks == 0))
     ignore_masks = np.squeeze(np.argwhere(output_anchor_masks == -1))
 
-    input_rgbs = np.zeros_like(input_coors) + [255, 0, 255]
+    input_rgbs = np.zeros_like(input_coors) + [255, 255, 255]
     anchor_coors = output_anchors[:, 3:6]
-    anchor_rgbs = np.zeros_like(anchor_coors)
-    anchor_rgbs[positive_masks, :] += [192, 192, 192]
-    anchor_rgbs[negative_masks, :] += [64, 64, 64]
-    # anchor_rgbs[ignore_masks, :] += [128, 128, 128]
+    positive_coors = anchor_coors[positive_masks, :]
+    ignore_coors = anchor_coors[ignore_masks, :]
 
-    anchor_coors = output_anchors[ignore_masks, 3:6]
-    anchor_rgbs = np.zeros_like(anchor_coors)
+    positive_rgbs = np.zeros_like(positive_coors) + [255, 0, 0]
+    ignore_rgbs = np.zeros_like(ignore_coors)
 
-    output_coors = np.concatenate([anchor_coors], axis=0)
-    output_rgbs = np.concatenate([anchor_rgbs], axis=0)
+    output_coors = np.concatenate([input_coors, ignore_coors, positive_coors], axis=0)
+    output_rgbs = np.concatenate([input_rgbs, ignore_rgbs, positive_rgbs], axis=0)
 
 
     # output_gt_bbox = output_gt_bbox[output_anchor_masks == 1, :]

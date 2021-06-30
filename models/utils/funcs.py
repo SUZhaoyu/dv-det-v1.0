@@ -169,8 +169,8 @@ def get_iou_masks(anchor_ious, low_thres=0.35, high_thres=0.6, force_ignore_thre
     max_match_idx = tf.expand_dims(tf.reshape(max_match_idx + batch_idx_offset, shape=[-1]), axis=1)  # [b*k, 1]
     masks = tf.numpy_function(element_replacement, [masks, max_match_idx, 1], tf.int32)
     #
-    # min_iou_idx = tf.where(tf.logical_and(tf.less(matched_anchor_ious, force_ignore_thres), tf.equal(masks, 1)))
-    # masks = tf.numpy_function(element_replacement, [masks, min_iou_idx, 0], tf.int32)
+    min_iou_idx = tf.where(tf.logical_and(tf.less(matched_anchor_ious, force_ignore_thres), tf.equal(masks, 1)))
+    masks = tf.numpy_function(element_replacement, [masks, min_iou_idx, 0], tf.int32)
 
     return masks
 
