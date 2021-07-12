@@ -97,6 +97,7 @@ def model(input_coors,
                                                               clip=True)
 
     return anchors, proposals, pred_conf
+    # return coors, features, num_list
 
 
 def loss(anchors, proposals, pred_conf, labels, weight_decay):

@@ -5,7 +5,7 @@ from os.path import join
 import numpy as np
 from tqdm import tqdm
 
-from data.generator.kitti_generator import Dataset
+from data.generator.kitti_generator import KittiDataset
 
 task = 'validation'
 validation = True
@@ -26,12 +26,12 @@ aug_config = {'nbbox': 256,
               'maximum_interior_points': 100,
               'normalization': None}
 
-DatasetEval = Dataset(task=task,
-                      batch_size=1,
-                      # config=aug_config,
-                      validation=validation,
-                      evaluation=evaluation,
-                      home='/home/tan/tony/dv-det-v1.0/datasets/kitti-half')
+DatasetEval = KittiDataset(task=task,
+                           batch_size=1,
+                           # config=aug_config,
+                           validation=validation,
+                           evaluation=evaluation,
+                           home='/home/tan/tony/dv-det-v1.0/datasets/kitti-half')
 
 try:
     mkdir(output_home)

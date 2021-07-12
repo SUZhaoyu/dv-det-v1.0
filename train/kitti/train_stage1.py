@@ -8,7 +8,7 @@ import sys
 import argparse
 from shutil import rmtree, copyfile
 
-HOME = join(dirname(os.getcwd()))
+HOME = '/home/tan/tony/dv-det-v1.0'
 sys.path.append(HOME)
 
 from models.builder.kitti import model_stage1 as MODEL
@@ -16,11 +16,12 @@ from configs.kitti import kitti_config_training as CONFIG
 from data.generator.kitti_generator import KittiDataset
 from train.train_utils import get_train_op, get_config, save_best_sess, set_training_controls
 
-hvd.init()
-is_hvd_root = hvd.rank() == 0
+
 
 if CONFIG.local:
-    log_dir = '/home/tan/tony/dv-det-v1.0/checkpoints/local-debug'
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    log_dir = join(HOME, 'ckpt-kitti/local-debug')
     try: rmtree(log_dir)
     except: pass
     os.mkdir(log_dir)
@@ -30,7 +31,11 @@ else:
     args = parser.parse_args()
     log_dir = args.log_dir
 
-if is_hvd_root:
+hvd.init()
+is_hvd_root = hvd.rank() == 0
+
+if is_hvd_root and not CONFIG.local:
+    print("****************", log_dir)
     copyfile(CONFIG.config_dir, join(log_dir, CONFIG.config_dir.split('/')[-1]))
 
 DatasetTrain = KittiDataset(task="training",
@@ -160,6 +165,11 @@ def main():
         for epoch in range(CONFIG.total_epoch):
             if is_hvd_root:
                 print("Epoch: {}".format(epoch))
+
+            # result = valid_one_epoch(sess=mon_sess,
+            #                          step=step,
+            #                          dataset_generator=valid_generator,
+            #                          writer=validation_writer)
 
             step = train_one_epoch(sess=mon_sess,
                                    step=step,

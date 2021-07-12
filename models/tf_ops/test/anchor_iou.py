@@ -19,7 +19,7 @@ from data.utils.normalization import convert_threejs_coors, convert_threejs_bbox
 from data.generator.kitti_generator import KittiDataset
 import configs.kitti.kitti_config_training as config
 from models.builder.kitti.model_stage1 import inputs_placeholder
-from models.tf_ops.loader import grid_sampling, get_gt_bbox
+from models.tf_ops.loader import grid_sampling, get_gt_bbox, voxel_sampling_idx_binary
 from models.utils.funcs import get_anchors, get_anchor_ious, bev_compression, get_iou_masks, merge_batch_anchors, \
     correct_ignored_masks
 
@@ -60,6 +60,7 @@ if __name__ == '__main__':
                                          dimension=DIMENSION_PARAMS['dimension'],
                                          offset=DIMENSION_PARAMS['offset'])
     features = tf.gather(input_features_p, idx)
+
 
     bev_img = bev_compression(input_coors=coors,
                               input_features=features,

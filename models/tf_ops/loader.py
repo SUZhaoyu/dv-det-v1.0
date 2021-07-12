@@ -15,8 +15,8 @@ def grid_sampling(input_coors,
                   resolution,
                   dimension,
                   offset):
-    if type(resolution) is float:
-        resolution = [resolution] * 3
+    # if type(resolution) is float:
+    #     resolution = [resolution] * 3
     output_idx, output_num_list = grid_sampling_exe.grid_sampling_op(input_coors=input_coors + offset,
                                                                      input_num_list=input_num_list,
                                                                      dimension=dimension,
@@ -198,12 +198,12 @@ dense_voxelization_exe = tf.load_op_library(join(CWD, 'build', 'dense_voxelizati
 def dense_voxelization(input_coors, input_features, input_num_list, resolution, dimension, offset):
     if type(resolution) is float:
         resolution = [resolution] * 3
-    output_features, _ = dense_voxelization_exe.dense_voxelization_op(input_coors=input_coors + offset,
+    output_features, idx = dense_voxelization_exe.dense_voxelization_op(input_coors=input_coors + offset,
                                                                       input_features=input_features,
                                                                       input_num_list=input_num_list,
                                                                       resolution=resolution,
                                                                       dimension=dimension)
-    return output_features
+    return output_features, idx
 
 @ops.RegisterGradient("DenseVoxelizationOp")
 def dense_voxelization_grad(op, grad, _):
@@ -213,6 +213,13 @@ def dense_voxelization_grad(op, grad, _):
                                                                             output_idx=output_idx,
                                                                             output_features_grad=grad)
     return [None, input_features_grad, None]
+
+def dense_voxelization_grad_test(input_features, output_idx, grad):
+
+    input_features_grad = dense_voxelization_exe.dense_voxelization_grad_op(input_features=input_features,
+                                                                            output_idx=output_idx,
+                                                                            output_features_grad=grad)
+    return input_features_grad
 
 # =============================================RoI Filter===============================================
 

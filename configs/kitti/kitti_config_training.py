@@ -12,7 +12,7 @@ aug_config = {'nbbox': 256,
               'flip': True,
               'shuffle': True,
               'paste_augmentation': True,
-              'paste_instance_num': 128,
+              'paste_instance_num': 32,
               'maximum_interior_points': 100,
               'normalization': None}
 
@@ -27,6 +27,11 @@ offset = [10., 80., 3.]
 bev_resolution = [0.4, 0.4, 0.8]
 padding_offset = 0.2
 
+# dimension = [74, 84.0, 4.]
+# offset = [2., 42.0, 3.]
+# bev_resolution = [0.4, 0.4, 0.8]
+# padding_offset = 0.2
+
 anchor_size = [1.6, 3.9, 1.5]
 anchor_params = [[1.6, 3.9, 1.5, -1., 0.],
                  [1.6, 3.9, 1.5, -1., math.pi/2.]]
@@ -38,7 +43,7 @@ output_pooling_size = 5
 output_attr = 8
 positive_thres = 0.6
 negative_thres = 0.35
-force_negative_thres = 0.1
+force_negative_thres = 0.35
 
 roi_thres = 0.3
 iou_thres = 0.55

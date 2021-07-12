@@ -26,12 +26,12 @@ rsync -av -W -e ssh --progress \
 echo "Pushing Completed!"
 
 
-conda_env_gx4="/home/tan/anaconda3/envs/det-tf15.5+cu11.3/bin/python"
+conda_env_gx4="/home/tan/anaconda3/envs/dv-det/bin/python"
 home_dir_gx4="$root_gx4/$HOME"
 exe_dir_gx4="$home_dir_gx4/train/$exe_file"
 mpi_exe_gx4="/usr/local/bin/mpirun"
 #
-conda_env_gx8="/home/tan/anaconda3/envs/det-tf15.5+cu11.3/bin/python"
+conda_env_gx8="/home/tan/anaconda3/envs/dv-det/bin/python"
 home_dir_gx8="$root_gx8/$HOME"
 exe_dir_gx8="$home_dir_gx8/train/$exe_file"
 mpi_exe_gx8="/usr/local/bin/mpirun"
@@ -77,16 +77,22 @@ if [ -d "$log_dir" ]; then
 fi
 mkdir $log_dir
 
+#mpirun -np 8 \
+#       -H $ip_gx4:8\
+#       -bind-to none -map-by slot \
+#       -x NCCL_DEBUG=INFO -x LD_LIBRARY_PATH -x PATH \
+#       -mca pml ob1 -mca btl ^openib \
+#       $conda_env_gx4 $exe_dir_gx4 --log_dir $log_dir :\
+#       -np 8 \
+#       -H $ip_gx8:8\
+#       -bind-to none -map-by slot \
+#       -x NCCL_DEBUG=INFO -x LD_LIBRARY_PATH -x PATH \
+#       -mca pml ob1 -mca btl ^openib \
+#       $conda_env_gx8 $exe_dir_gx8
+
 mpirun -np 8 \
        -H $ip_gx4:8\
        -bind-to none -map-by slot \
        -x NCCL_DEBUG=INFO -x LD_LIBRARY_PATH -x PATH \
        -mca pml ob1 -mca btl ^openib \
-       $conda_env_gx4 $exe_dir_gx4 --log_dir $log_dir :\
-       -np 8 \
-       -H $ip_gx8:8\
-       -bind-to none -map-by slot \
-       -x NCCL_DEBUG=INFO -x LD_LIBRARY_PATH -x PATH \
-       -mca pml ob1 -mca btl ^openib \
-       $conda_env_gx8 $exe_dir_gx8
-
+       $conda_env_gx4 $exe_dir_gx4 --log_dir $log_dir

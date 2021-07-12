@@ -19,6 +19,7 @@ import configs.kitti.kitti_config_training as config
 
 # os.environ['MKL_NUM_THREADS'] = '1'
 mkl.set_num_threads(1)
+EPS = 1e-2
 
 default_config = {'nbbox': config.bbox_padding,
                   'rotate_range': 0.,
@@ -183,6 +184,7 @@ class KittiDataset(object):
                             difficulty = box[-1]
                             ret_bboxes.append([w, l, h, x, y, z, r, category, difficulty])
 
+                        coors[:, -1] = np.clip(coors[:, -1], -3. + EPS, 1. - EPS)
                         batch_coors.append(coors)
                         batch_features.append(features)
                         batch_num_list.append(len(coors))
@@ -229,7 +231,7 @@ class KittiDataset(object):
                 # keep_idx = range_clip(coors, self.range_x, self.range_y, self.range_z)
                 # coors = coors[keep_idx, :]
                 # features = features[keep_idx, :]
-
+                coors[:, -1] = np.clip(coors[:, -1], -3. + EPS, 1. - EPS)
                 batch_coors.append(coors)
                 batch_features.append(feature_normalize(features, method=self.normalization))
                 batch_num_list.append(len(coors))
@@ -264,28 +266,28 @@ if __name__ == '__main__':
                   'maximum_interior_points': 100,
                   'normalization': None}
 
-    dataset = Dataset(task='training',
+    dataset = KittiDataset(task='training',
                       config=aug_config,
                       batch_size=16,
                       validation=False,
-                      num_worker=1,
+                      num_worker=40,
                       hvd_size=3,
                       hvd_id=1)
     generator = dataset.train_generator()
-    for i in tqdm(range(1)):
+    for i in tqdm(range(10000)):
         # dataset.aug_process()
         coors, features, num_list, bboxes = next(generator)
 
-        # dimension = [100., 100., 9.]
-        # offset = [10., 10., 5.]
+        dimension = [100., 160., 4.]
+        offset = [10., 80., 3.]
         # # #
-        # coors += offset
-        # coors_min = np.min(coors, axis=0)
-        # coors_max = np.max(coors, axis=0)
-        # # print(coors_min, coors_max)
-        # for j in range(3):
-        #     if coors_min[j] < 0 or coors_max[j] > dimension[j]:
-        #         print(coors_min, coors_max)
+        coors += offset
+        coors_min = np.min(coors, axis=0)
+        coors_max = np.max(coors, axis=0)
+        # print(coors_min, coors_max)
+        for j in range(3):
+            if coors_min[j] < 0 or coors_max[j] > dimension[j]:
+                print(coors_min, coors_max)
 
     # coors, ref, attention, bboxes = next(dataset.train_generator())
     # dataset.stop()

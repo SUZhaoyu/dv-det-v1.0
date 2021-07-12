@@ -56,8 +56,9 @@ base_params = {'base_00': {'subsample_res': 0.10, 'c_out':  16, 'kernel_res': 0.
                'base_09': {'subsample_res': None, 'c_out':  64, 'kernel_res': None, 'concat': False},
                'base_10': {'subsample_res': None, 'c_out':  64, 'kernel_res': None, 'concat': True}}
 
+
 bev_params = {'bev_00': {'kernel_size': 3, 'c_out': 128},
               'bev_01': {'kernel_size': 3, 'c_out': 128},
-              'bev_02': {'kernel_size': 1, 'c_out': 2 * output_attr}}
+              'bev_02': {'kernel_size': 1, 'c_out': len(anchor_params) * output_attr}}
 
 refine_params = {'c_out': 128, 'kernel_size': 3, 'padding': 0.}

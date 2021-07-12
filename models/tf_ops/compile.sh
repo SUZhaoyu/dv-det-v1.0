@@ -5,7 +5,7 @@ fi
 TF_CFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))') )
 TF_LFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))') )
 
-CUDA_NVCC="/usr/local/cuda-11.3/bin/nvcc"
+CUDA_NVCC="/usr/local/cuda-10.0/bin/nvcc"
 # TODO: Add --use_fast_math flag.
 
 echo "Using nvcc: $CUDA_NVCC"
@@ -32,10 +32,10 @@ g++ -std=c++11 src/bbox_logits_to_attrs.cpp build/bbox_logits_to_attrs.cu.o -o b
 
 $CUDA_NVCC src/unique.cu -o build/unique.cu.o -c ${TF_CFLAGS[@]} -D GOOGLE_CUDA=1 -x cu -Xcompiler -fPIC
 g++ -std=c++11 src/unique.cpp build/unique.cu.o -o build/unique.so -shared ${TF_CFLAGS[@]} -fPIC -lcudart ${TF_LFLAGS[@]} -L /usr/local/cuda/lib64/ -I /usr/local/cuda/include
-
+#
 $CUDA_NVCC src/nms.cu -o build/nms.cu.o -c ${TF_CFLAGS[@]} -D GOOGLE_CUDA=1 -x cu -Xcompiler -fPIC
 g++ -std=c++11 src/nms.cpp build/nms.cu.o -o build/nms.so -shared ${TF_CFLAGS[@]} -fPIC -lcudart ${TF_LFLAGS[@]} -L /usr/local/cuda/lib64/ -I /usr/local/cuda/include
-
+#
 $CUDA_NVCC src/la_roi_pooling_fast.cu -o build/la_roi_pooling_fast.cu.o -c ${TF_CFLAGS[@]} -D GOOGLE_CUDA=1 -x cu -Xcompiler -fPIC
 g++ -std=c++11 src/la_roi_pooling_fast.cpp build/la_roi_pooling_fast.cu.o -o build/la_roi_pooling_fast.so -shared ${TF_CFLAGS[@]} -fPIC -lcudart ${TF_LFLAGS[@]} -L /usr/local/cuda/lib64/ -I /usr/local/cuda/include
 
@@ -47,17 +47,8 @@ g++ -std=c++11 src/voxel_sampling_feature.cpp build/voxel_sampling_feature.cu.o 
 
 $CUDA_NVCC src/voxel_sampling_idx_binary.cu -o build/voxel_sampling_idx_binary.cu.o -c ${TF_CFLAGS[@]} -D GOOGLE_CUDA=1 -x cu -Xcompiler -fPIC --use_fast_math
 g++ -std=c++11 src/voxel_sampling_idx_binary.cpp build/voxel_sampling_idx_binary.cu.o -o build/voxel_sampling_idx_binary.so -shared ${TF_CFLAGS[@]} -fPIC -lcudart ${TF_LFLAGS[@]} -L /usr/local/cuda/lib64/ -I /usr/local/cuda/include
-#
+
 $CUDA_NVCC src/dense_voxelization.cu -o build/dense_voxelization.cu.o -c ${TF_CFLAGS[@]} -D GOOGLE_CUDA=1 -x cu -Xcompiler -fPIC
 g++ -std=c++11 src/dense_voxelization.cpp build/dense_voxelization.cu.o -o build/dense_voxelization.so -shared ${TF_CFLAGS[@]} -fPIC -lcudart ${TF_LFLAGS[@]} -L /usr/local/cuda/lib64/ -I /usr/local/cuda/include
-
-
-
-
-
-
-
-
-
 
 echo "Compilation completed."

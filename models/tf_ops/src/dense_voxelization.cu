@@ -52,8 +52,11 @@ __global__ void dense_voxelization_features_gpu_kernel(int batch_size, int chann
     int voxel_id = threadIdx.x + blockIdx.x * blockDim.x;
     if (voxel_id < batch_size * output_w * output_l * output_h) {
         int count = count_buffer[voxel_id];
+//        for (int c = 0; c < channels; c++) {
+//            output_features[voxel_id * channels + c] = -1.;
+//        }
         if (count > 0) {
-            int point_id = output_idx[voxel_id];\
+            int point_id = output_idx[voxel_id];
             for (int c = 0; c < channels; c++) {
                 output_features[voxel_id * channels + c] = input_features[point_id * channels + c];
 //                output_features[voxel_id * channels + c] = 1.;
@@ -73,7 +76,7 @@ __global__ void dense_voxelization_grad_gpu_kernel(int batch_size, int channels,
         int point_id = output_idx[voxel_id];
         if (point_id >= 0) {
             for (int c = 0; c < channels; c++) {
-                input_features_grad[point_id * channels + c] = output_features_grad[voxel_id + c];
+                input_features_grad[point_id * channels + c] = output_features_grad[voxel_id * channels + c];
             }
         }
     }
