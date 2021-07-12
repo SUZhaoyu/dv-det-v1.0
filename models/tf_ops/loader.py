@@ -203,7 +203,7 @@ def dense_voxelization(input_coors, input_features, input_num_list, resolution, 
                                                                       input_num_list=input_num_list,
                                                                       resolution=resolution,
                                                                       dimension=dimension)
-    return output_features, idx
+    return output_features #, idx
 
 @ops.RegisterGradient("DenseVoxelizationOp")
 def dense_voxelization_grad(op, grad, _):

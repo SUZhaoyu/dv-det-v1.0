@@ -261,17 +261,17 @@ def conv_3d_wrapper(inputs,
         if summary:
             tf.summary.scalar('kernel_l2', tf.nn.l2_loss(kernel))
 
-        # outputs = tf.nn.conv3d(input=reshaped_inputs,
-        #                        filter=kernel,
-        #                        strides=[1, 1, 1, 1, 1],
-        #                        padding='VALID')
+        outputs = tf.nn.conv3d(input=reshaped_inputs,
+                               filter=kernel,
+                               strides=[1, 1, 1, 1, 1],
+                               padding='VALID')
 
-        outputs = tf.cond(tf.greater(kernel_num, 0),
-                          lambda: tf.nn.conv3d(input=reshaped_inputs,
-                                               filter=kernel,
-                                               strides=[1, 1, 1, 1, 1],
-                                               padding='VALID'),
-                          lambda: tf.random.uniform(shape=[0, input_size-2, input_size-2, input_size-2, num_output_channels]))
+        # outputs = tf.cond(tf.greater(kernel_num, 0),
+        #                   lambda: tf.nn.conv3d(input=reshaped_inputs,
+        #                                        filter=kernel,
+        #                                        strides=[1, 1, 1, 1, 1],
+        #                                        padding='VALID'),
+        #                   lambda: tf.random.uniform(shape=[0, input_size-2, input_size-2, input_size-2, num_output_channels]))
 
         if bn_decay is None:
             outputs = tf.nn.bias_add(outputs, biases)
@@ -319,14 +319,14 @@ def conv_2d_wrapper(inputs,
             kernel_shape = [kernel_size, kernel_size, num_input_channels, num_output_channels]
         else:
             kernel_shape = [kernel_size, kernel_size, num_output_channels, num_input_channels]
-        kernel = _variable_with_l2_loss(name=scope.split('_')[0] + '_weight',
+        kernel = _variable_with_l2_loss(name='weight',
                                         shape=kernel_shape,
                                         use_xavier=use_xavier,
                                         stddev=stddev,
                                         l2_loss_collection=l2_loss_collection,
                                         trainable=trainable)
 
-        biases = _variable_with_l2_loss(name=scope.split('_')[0] + '_biases',
+        biases = _variable_with_l2_loss(name='biases',
                                         shape=[num_output_channels],
                                         initializer=tf.constant_initializer(0.0),
                                         with_l2_loss=False,

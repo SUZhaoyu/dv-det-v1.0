@@ -40,7 +40,8 @@ def bev_compression(input_coors,
                                       dimension=dimension_params['dimension'],
                                       offset=dimension_params['offset'],
                                       resolution=resolution)  # [b, w, l, h, c]
-    dense_voxels_shape = dense_voxels.get_shape()
+    # dense_voxels_shape = tf.shape(dense_voxels)
+    dense_voxels_shape = dense_voxels.shape.as_list()
     bev_img = tf.reshape(dense_voxels, shape=[tf.shape(dense_voxels)[0],
                                               dense_voxels_shape[1],
                                               dense_voxels_shape[2],

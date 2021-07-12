@@ -5,7 +5,7 @@ fi
 TF_CFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))') )
 TF_LFLAGS=( $(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))') )
 
-CUDA_NVCC="/usr/local/cuda-10.0/bin/nvcc"
+CUDA_NVCC="/usr/local/cuda-11.3/bin/nvcc"
 # TODO: Add --use_fast_math flag.
 
 echo "Using nvcc: $CUDA_NVCC"
